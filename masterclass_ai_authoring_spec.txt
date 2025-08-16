@@ -19,6 +19,7 @@ Rules (strict):
 6) Keep each bullet ≤ 100 characters. Plain text only.
 7) Do not include any prose paragraphs under H3 slides—only bullet lines starting with “- ”.
 8) Use blank lines between logical blocks. Avoid bold/italic/links – plain text is safest.
+9) To include a YouTube video slide, use an H3 heading with a single bullet containing the full YouTube URL.
 
 Example (you can copy this shape):
 
@@ -85,7 +86,8 @@ Rules (strict):
 
 3) Allowed template ids:
    "01_title", "02_toc", "03_section", "04_two_col_bullets",
-   "05_image_right_research", "06_quote", "07_checklist", "08_conclusion"
+   "05_image_right_research", "06_quote", "07_checklist", "08_conclusion",
+   "09_video"
 
 4) Field hints by template:
    • 01_title → data: { h1, subtitle }
@@ -96,6 +98,7 @@ Rules (strict):
    • 06_quote → data: { quote, by }
    • 07_checklist → data: { h1, items[] }
    • 08_conclusion → data: { h1, takeaways[], goal, steps[] }
+   • 09_video → data: { h1, youtube }
 
 Example minimal JSON:
 
@@ -106,7 +109,8 @@ Example minimal JSON:
     { "template": "02_toc", "data": { "h1": "Table of Contents", "items": ["Introduction","Roles","Inclusive Practices","Behavior","Data"] } },
     { "template": "03_section", "data": { "h1": "Introduction", "tagline": "Why this role matters" } },
     { "template": "04_two_col_bullets", "data": { "h1": "What Is a Paraprofessional?", "subtitle": "", "bullets": ["Supports teachers/students","Implements plans","Collects quick data"] } },
-    { "template": "06_quote", "data": { "quote": "Every interaction is an intervention.", "by": "Unknown" } }
+    { "template": "06_quote", "data": { "quote": "Every interaction is an intervention.", "by": "Unknown" } },
+    { "template": "09_video", "data": { "h1": "Watch this clip", "youtube": "https://youtu.be/dQw4w9WgXcQ" } }
   ]
 }
 

@@ -28,6 +28,9 @@
 - [bullet 1]
 - [bullet 2]
 
+### [Video title]
+- https://www.youtube.com/watch?v=VIDEO_ID
+
 ## Section 4
 ### [Slide title]
 - [bullet 1]

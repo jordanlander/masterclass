@@ -129,6 +129,7 @@ Subtitle
               <option>06_quote</option>
               <option>07_checklist</option>
               <option>08_conclusion</option>
+              <option>09_video</option>
             </select>
           </div>
           <div class="toolbar mt-3" style="justify-content:space-between">
@@ -236,7 +237,11 @@ function mdToOutline(md){
     if(/^###\s+/.test(L)){
       const h3 = L.replace(/^###\s+/, '').trim();
       const bullets = getList(i+1);
-      slides.push({ template:"04_two_col_bullets", data:{ h1:h3, subtitle:"", bullets, icon:"", caption:"" }});
+      if(bullets.length===1 && /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(bullets[0])){
+        slides.push({ template:"09_video", data:{ h1:h3, youtube: bullets[0] }});
+      }else{
+        slides.push({ template:"04_two_col_bullets", data:{ h1:h3, subtitle:"", bullets, icon:"", caption:"" }});
+      }
       continue;
     }
   }
@@ -382,6 +387,17 @@ function slideHTML(s){
           </div>
         </div>
       ${end}`;
+    case "09_video": {
+      const m = (d.youtube||"").match(/(?:youtu.be\/|watch\?v=|embed\/)([^?&]+)/);
+      const id = m ? m[1] : "";
+      return `
+      ${begin}
+        <h1 class="hdr" style="font-size:32px;margin:0 0 12px">${d.h1||""}</h1>
+        <div class="center" style="height:540px">
+          <iframe width="800" height="450" src="${id?`https://www.youtube.com/embed/${id}`:""}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+      ${end}`;
+    }
     default:
       return `${begin}<p class="p">Unknown template: ${s.template}</p>${end}`;
   }
