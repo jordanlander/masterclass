@@ -9,7 +9,7 @@ A) PREFERRED OUTPUT: MARKDOWN FORMAT
 ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
 Rules (strict):
-1) Use only headings and hyphen bullets. No code blocks, no tables, no images.
+1) Use only headings and hyphen bullets. Avoid code blocks. Images and tables are allowed via special bullets.
 2) Headings allowed: H1 (#), H2 (##), H3 (###). Nothing deeper.
 3) After the H1 title, the very next line may be a one-line subtitle (plain text).
 4) “Table of Contents” must be an H2 exactly:  ## Table of Contents
@@ -24,6 +24,9 @@ Rules (strict):
 11) NOTE: Under any ### slide, add one or more NOTE: ... lines (speaker notes; not shown on slide).
 12) LINK: Under any ### slide, add LINK: Label | https://...
 13) IMG (optional): IMG: https://... | optional caption (shows right-side image).
+14) TABLE (optional): Start a bullet with TABLE: then provide Markdown table rows on subsequent lines. First row is headers.
+15) Bullets may include emojis for emphasis.
+16) Continue the pattern for as many slides as needed; no slide limit.
 
 Example (you can copy this shape):
 
@@ -59,6 +62,13 @@ A comprehensive guide to effective support strategies.
 - Promise secrecy or share private info
 - Use restraint if not trained/authorized
 
+### Data Snapshot
+- TABLE:
+| Metric | Value |
+|--------|-------|
+| 🧑‍🎓 Students | 25 |
+| 🏫 Schools | 5 |
+
 [Continue using the same pattern for all sections…]
 
 
@@ -88,19 +98,20 @@ Rules (strict):
   ]
 }
 
-3) Allowed template ids:
+  3) Allowed template ids:
    "01_title", "02_toc", "03_section", "04_two_col_bullets",
    "05_image_right_research", "06_quote", "07_checklist", "08_conclusion",
-   "09_video"
+   "09_video", "10_table"
 
-4) Additional optional fields allowed on any slide’s data:
+  4) Additional optional fields allowed on any slide’s data:
    "video": "https://...",
    "notes": ["one-sentence note", "another note"],
    "links": [ { "label": "Resource", "url": "https://..." } ],
    "image": "https://...",
-   "caption": "optional"
+   "caption": "optional",
+   "table": { "headers": [], "rows": [[]] }
 
-5) Field hints by template:
+  5) Field hints by template:
    • 01_title → data: { h1, subtitle }
    • 02_toc   → data: { h1, items[] }
    • 03_section → data: { h1, tagline, icon? }
@@ -110,6 +121,7 @@ Rules (strict):
    • 07_checklist → data: { h1, items[] }
    • 08_conclusion → data: { h1, takeaways[], goal, steps[] }
    • 09_video → data: { h1, youtube }
+   • 10_table → data: { h1, table:{ headers[], rows[][] }, bullets[]? }
 
 Example minimal JSON:
 
@@ -120,6 +132,7 @@ Example minimal JSON:
     { "template": "02_toc", "data": { "h1": "Table of Contents", "items": ["Introduction","Roles","Inclusive Practices","Behavior","Data"] } },
     { "template": "03_section", "data": { "h1": "Introduction", "tagline": "Why this role matters" } },
     { "template": "04_two_col_bullets", "data": { "h1": "What Is a Paraprofessional?", "subtitle": "", "bullets": ["Supports teachers/students","Implements plans","Collects quick data"] } },
+    { "template": "10_table", "data": { "h1": "Data Snapshot", "table": { "headers": ["Metric","Value"], "rows": [["Students","25"],["Schools","5"]] } } },
     { "template": "06_quote", "data": { "quote": "Every interaction is an intervention.", "by": "Unknown" } },
     { "template": "09_video", "data": { "h1": "Watch this clip", "youtube": "https://youtu.be/dQw4w9WgXcQ" } }
   ]
@@ -128,9 +141,9 @@ Example minimal JSON:
 ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 C) VALIDATION CHECKLIST BEFORE YOU HAND IT OFF
 ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-• If Markdown: starts with one H1; has “## Table of Contents” with hyphen bullets; sections are H2; slides are H3 with hyphen bullets only.
+• If Markdown: starts with one H1; has “## Table of Contents” with hyphen bullets; sections are H2; slides are H3 with hyphen bullets. Tables must follow a TABLE: bullet with pipe rows.
 • If JSON: parses cleanly; uses only allowed template ids; all arrays use double quotes; no trailing commas.
-• Keep bullets short, plain text, no links or formatting.
+• Keep bullets short, plain text; emojis allowed.
 • No student-identifying info; keep language objective.
 
 OUTPUT CONTRACT FOR THE AI

@@ -6,26 +6,30 @@
 - Section 2
 - Section 3
 - Section 4
+- Section 5
 - Conclusion
 
 ## Introduction
 ### [Slide title]
-- [bullet 1]
-- [bullet 2]
-- [bullet 3]
-- VIDEO: https://youtu.be/VIDEO_ID
-- LINK: Resource | https://example.org/resource.pdf
+- 🌟 [bullet 1]
+- ✅ [bullet 2]
+- 📌 [bullet 3]
 - IMG: https://picsum.photos/640/360 | optional caption
 - NOTE: [speaker note goes here]
 
 ### [Another slide]
 - [bullet 1]
-- [bullet 2]
+- VIDEO: https://youtu.be/VIDEO_ID
+- LINK: Resource | https://example.org/resource.pdf
 
 ## Section 2
-### [Slide title]
-- [bullet 1]
-- [bullet 2]
+### [Slide with Table]
+- [intro bullet]
+- TABLE:
+| Column A | Column B |
+|----------|----------|
+| A1 | B1 |
+| A2 | B2 |
 
 ## Section 3
 ### [Slide title]
@@ -38,10 +42,16 @@
 ## Section 4
 ### [Slide title]
 - [bullet 1]
-- [bullet 2]
+- IMG: https://picsum.photos/640/360 | caption
+
+## Section 5
+### [Emoji Slide]
+- 😀 Fun fact
+- 🎯 Key point
+- 📈 Statistic
 
 ## Conclusion
 ### Key Takeaways
-- [bullet 1]
-- [bullet 2]
-- [bullet 3]
+- ✅ [bullet 1]
+- ✅ [bullet 2]
+- ✅ [bullet 3]
