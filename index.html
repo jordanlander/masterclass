@@ -45,10 +45,10 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
 .footer-bar{background:var(--brand);height:40px;color:white;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
 .icon-circle{width:80px;height:80px;border-radius:50%;background:#fff;border:2px solid var(--brand);display:flex;align-items:center;justify-content:center;font-size:36px}
 .section-icon{width:120px;height:120px;border-radius:50%;background:#fff;border:3px solid var(--brand);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 6px rgba(0,0,0,.1);font-size:54px}
-.bullet-point{position:relative;padding-left:28px;margin:8px 0;font-size:18px}
+.bullet-point{position:relative;padding-left:28px;margin:6px 0;font-size:18px;line-height:1.5}
 .bullet-point::before{content:"";position:absolute;left:0;top:10px;width:8px;height:8px;background:var(--brand);border-radius:50%}
 .hdr{font-family:Montserrat,Inter,sans-serif;color:#0b2250}
-.p{font-family:"Open Sans",Inter,sans-serif;color:#475569}
+.p{font-family:"Open Sans",Inter,sans-serif;color:#475569;line-height:1.5}
 /* Utility-ish */
 .row{display:flex;gap:24px}
 .col{display:flex;flex-direction:column}
@@ -75,6 +75,16 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
         <button class="btn secondary" id="btnExportPDF">Export PDF</button>
       </div>
     </header>
+
+    <div class="card mb-4">
+      <strong>Quickstart with AI</strong>
+      <ol class="p" style="margin:8px 0 0 18px">
+        <li>Download the <a href="masterclass_markdown_template.md" download>Markdown Template</a>.</li>
+        <li>Load it into your AI tool and prompt: <span class="small">"Research the topic and fill the template using markdown. Include image placeholders like <code>![](url)</code> and video links."</span></li>
+        <li>Paste the AI's markdown below and click <strong>Use Pasted Text</strong>.</li>
+        <li>Review the slides, then export to PPTX or PDF.</li>
+      </ol>
+    </div>
 
     <div class="split">
       <!-- Left: import + meta + quick controls -->
