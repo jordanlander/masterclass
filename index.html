@@ -1,1 +1,578 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Masterclass — Research → Slides → PPTX/PDF</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- Minimal, modern styles (no build step) -->
+<style>
+:root{
+  --bg:#0b1220; --card:#0f172a; --muted:#94a3b8; --text:#e2e8f0;
+  --brand:#2a4b8d; --accent:#e67e22; --paper:#f5f7ff;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}
+.container{max-width:1200px;margin:24px auto;padding:0 16px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.h1{font-size:28px;font-weight:800}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.grid{display:grid;gap:16px}
+.grid-2{grid-template-columns:420px 1fr}
+.input,textarea,select{background:#0b1325;color:var(--text);border:1px solid #1f2937;border-radius:10px;padding:10px;width:100%}
+.small{font-size:12px;color:var(--muted)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--brand);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+.btn.secondary{background:#334155}
+.btn.ghost{background:transparent;border:1px dashed #334155}
+.badge{background:#1e293b;padding:4px 8px;border-radius:999px;color:#cbd5e1;font-size:12px}
+.split{display:grid;grid-template-columns:420px 1fr;gap:16px}
+.preview{background:white;border-radius:12px;overflow:auto;height:560px;padding:8px}
+
+/* ------------- SLIDE THEME (16:9, 1280x720) ------------- */
+.slide-container{width:1280px;min-height:720px;position:relative;background:#fff;border-radius:12px;overflow:hidden}
+.title-bar{background:var(--brand);height:12px}
+.accent-bar{background:var(--accent);height:4px}
+.footer-bar{background:var(--brand);height:40px;color:white;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+.icon-circle{width:80px;height:80px;border-radius:50%;background:#fff;border:2px solid var(--brand);display:flex;align-items:center;justify-content:center;font-size:36px}
+.section-icon{width:120px;height:120px;border-radius:50%;background:#fff;border:3px solid var(--brand);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 6px rgba(0,0,0,.1);font-size:54px}
+.bullet-point{position:relative;padding-left:28px;margin:8px 0;font-size:18px}
+.bullet-point::before{content:"";position:absolute;left:0;top:10px;width:8px;height:8px;background:var(--brand);border-radius:50%}
+.hdr{font-family:Montserrat,Inter,sans-serif;color:#0b2250}
+.p{font-family:"Open Sans",Inter,sans-serif;color:#475569}
+/* Utility-ish */
+.row{display:flex;gap:24px}
+.col{display:flex;flex-direction:column}
+.center{display:flex;align-items:center;justify-content:center}
+.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}.mt-6{margin-top:24px}
+.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}.mb-6{margin-bottom:24px}
+.w-2-3{width:66.666%}.w-1-3{width:33.333%}
+.w-full{width:100%}
+.hidden{display:none}
+</style>
+
+<!-- Client-side exporters -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="h1">Masterclass — one-file slide builder</div>
+      <div class="toolbar">
+        <button class="btn" id="btnDownloadJson">Download outline.json</button>
+        <button class="btn secondary" id="btnExportPPTX">Export PPTX</button>
+        <button class="btn secondary" id="btnExportPDF">Export PDF</button>
+      </div>
+    </header>
+
+    <div class="split">
+      <!-- Left: import + meta + quick controls -->
+      <div class="grid">
+        <div class="card">
+          <div class="toolbar" style="justify-content:space-between">
+            <strong>Import</strong>
+            <span class="badge">Paste Markdown or JSON • or drop a file</span>
+          </div>
+          <textarea id="pasteBox" rows="10" class="mt-2" placeholder="# Title
+Subtitle
+## Table of Contents
+- Section A
+- Section B
+## Section A
+### Topic A1
+- Bullet 1
+- Bullet 2"></textarea>
+          <div class="toolbar mt-3">
+            <button class="btn" id="btnUsePasted">Use Pasted Text</button>
+            <button class="btn ghost" id="btnSample">Load Sample</button>
+            <span class="small" id="status"></span>
+          </div>
+          <div class="small mt-3">Tip: JSON shape: {"meta":{...},"slides":[{ "template":"01_title", "data":{...} }...]}</div>
+        </div>
+
+        <div class="card">
+          <div class="toolbar" style="justify-content:space-between">
+            <strong>Slides</strong>
+            <span class="badge" id="countBadge">0 items</span>
+          </div>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
+            <label class="small">Current Title</label>
+            <label class="small">Template</label>
+            <input id="titleInput" class="input"/>
+            <select id="templateSelect" class="input">
+              <option>01_title</option>
+              <option>02_toc</option>
+              <option>03_section</option>
+              <option>04_two_col_bullets</option>
+              <option>05_image_right_research</option>
+              <option>06_quote</option>
+              <option>07_checklist</option>
+              <option>08_conclusion</option>
+            </select>
+          </div>
+          <div class="toolbar mt-3" style="justify-content:space-between">
+            <div class="toolbar">
+              <button class="btn secondary" id="btnPrev">◀ Prev</button>
+              <span class="badge" id="idxBadge">Slide 0 / 0</span>
+              <button class="btn secondary" id="btnNext">Next ▶</button>
+            </div>
+            <div class="toolbar">
+              <button class="btn ghost" id="btnAdd">+ Add Slide</button>
+              <button class="btn ghost" id="btnDelete">Delete</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <strong>Meta</strong>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+            <input id="metaTitle" class="input" placeholder="Deck title"/>
+            <input id="metaPresenter" class="input" placeholder="Presenter"/>
+            <input id="metaOrg" class="input" placeholder="Organization"/>
+            <input id="metaDate" class="input" placeholder="Date"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: preview -->
+      <div class="grid">
+        <div class="card">
+          <div class="toolbar" style="justify-content:space-between">
+            <strong>Preview</strong>
+            <span class="small">16:9 • 1280×720</span>
+          </div>
+          <div id="preview" class="preview center">
+            <div class="small">No slides yet. Paste Markdown or JSON to begin.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="small mt-3">
+      This is a single-file prototype for rapid authoring. Extend freely in Codespaces/Copilot.
+      Exporters use client-side rendering via <code>html2canvas</code> + <code>pptxgenjs</code> / <code>jsPDF</code>.
+    </p>
+  </div>
+
+  <!-- Hidden render stage for exports -->
+  <div id="renderStage" class="hidden"></div>
+
+<script>
+/*** --------------------- OUTLINE + PARSER --------------------- ***/
+let outline = { meta:{ title:"", presenter:"", org:"", date:"" }, slides:[] };
+let idx = 0;
+
+function mdToOutline(md){
+  const lines = md.split(/\r?\n/);
+  const slides = [];
+  let titleCaptured = false;
+
+  function getList(start){
+    const out = [];
+    for(let i=start;i<lines.length;i++){
+      const L = lines[i];
+      if(/^\s*-\s+/.test(L)) out.push(L.replace(/^\s*-\s+/, '').trim());
+      else if(/^#/.test(L) || !L.trim()) break;
+      else break;
+    }
+    return out;
+  }
+
+  for(let i=0;i<lines.length;i++){
+    const L = lines[i];
+
+    if(/^#\s+/.test(L) && !titleCaptured){
+      const h1 = L.replace(/^#\s+/, '').trim();
+      slides.push({ template:"01_title", data:{ h1, subtitle: lines[i+1] && !/^#/.test(lines[i+1]) ? lines[i+1].trim() : "" }});
+      titleCaptured = true;
+      continue;
+    }
+
+    if(/^##\s+Table of Contents/i.test(L)){
+      const items = getList(i+1);
+      slides.push({ template:"02_toc", data:{ h1:"Table of Contents", items }});
+      continue;
+    }
+
+    if(/^##\s+/.test(L)){
+      const h2 = L.replace(/^##\s+/, '').trim();
+      slides.push({ template:"03_section", data:{ h1:h2, tagline:"", icon:"" }});
+      continue;
+    }
+
+    if(/^###\s+/.test(L)){
+      const h3 = L.replace(/^###\s+/, '').trim();
+      const bullets = getList(i+1);
+      slides.push({ template:"04_two_col_bullets", data:{ h1:h3, subtitle:"", bullets, icon:"", caption:"" }});
+      continue;
+    }
+  }
+
+  return { meta:{ title:"" }, slides };
+}
+
+/*** --------------------- TEMPLATES --------------------- ***/
+function slideHTML(s){
+  const d = s.data || {};
+  const begin = `
+  <div class="slide-container">
+    <div class="title-bar"></div>
+    <div class="accent-bar"></div>
+    <div style="min-height:620px;padding:40px">`;
+
+  const end = `
+    </div>
+    <div class="accent-bar"></div>
+    <div class="footer-bar"><span>Masterclass</span><span>Create → Teach → Impact</span></div>
+  </div>`;
+
+  switch(s.template){
+    case "01_title":
+      return `
+      ${begin}
+        <div class="center col" style="gap:16px;text-align:center;height:540px">
+          <div class="row center" style="gap:48px">
+            <div class="icon-circle">📖</div><div class="icon-circle">👩‍🏫</div><div class="icon-circle">👥</div>
+          </div>
+          <h1 class="hdr" style="font-size:48px;margin:8px 0 4px">${d.h1||""}</h1>
+          <p class="p" style="font-size:20px;max-width:900px;margin:0 auto">${d.subtitle||""}</p>
+        </div>
+      ${end}`;
+    case "02_toc":
+      const items = (d.items||[]);
+      const half = Math.ceil(items.length/2);
+      return `
+      ${begin}
+        <h1 class="hdr" style="font-size:36px;margin:0 0 12px">${d.h1||"Table of Contents"}</h1>
+        <div class="row" style="gap:24px">
+          <div class="col" style="flex:1">
+            ${items.slice(0,half).map((t,i)=>`
+              <div class="row" style="align-items:center;gap:8px">
+                <span class="icon-circle" style="width:32px;height:32px;font-size:14px;border-width:0;background:#1e3a8a;color:#fff">${i+1}</span>
+                <span class="p" style="font-weight:700">${t}</span>
+              </div>`).join("")}
+          </div>
+          <div class="col" style="flex:1">
+            ${items.slice(half).map((t,i)=>`
+              <div class="row" style="align-items:center;gap:8px">
+                <span class="icon-circle" style="width:32px;height:32px;font-size:14px;border-width:0;background:#1e3a8a;color:#fff">${i+1+half}</span>
+                <span class="p" style="font-weight:700">${t}</span>
+              </div>`).join("")}
+          </div>
+        </div>
+      ${end}`;
+    case "03_section":
+      return `
+      ${begin}
+        <div class="row" style="align-items:center;height:540px">
+          <div class="col" style="flex:2;padding-right:24px">
+            <h1 class="hdr" style="font-size:60px;margin:0 0 12px">${d.h1||""}</h1>
+            <div style="width:120px;height:6px;background:#f59e0b;margin-bottom:12px"></div>
+            <p class="p" style="font-size:22px;max-width:640px">${d.tagline||""}</p>
+          </div>
+          <div class="center" style="flex:1">
+            <div class="section-icon">${d.icon||"🧩"}</div>
+          </div>
+        </div>
+      ${end}`;
+    case "04_two_col_bullets":
+      return `
+      ${begin}
+        <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||""}</h1>
+        <p class="p" style="font-size:18px;margin:0 0 12px">${d.subtitle||""}</p>
+        <div class="row" style="gap:24px">
+          <div style="flex:3">
+            ${(d.bullets||[]).map(b=>`<p class="bullet-point">${b}</p>`).join("")}
+            ${d.highlight ? `
+              <div style="margin-top:12px;padding:12px;background:#eff6ff;border-left:4px solid #1e3a8a;border-radius:8px">
+                <p class="hdr" style="font-size:18px;margin:0 0 6px">${d.highlight.title||"Key Consideration:"}</p>
+                <p class="p" style="margin:0">${d.highlight.text||""}</p>
+              </div>` : ""}
+          </div>
+          <div style="flex:2">
+            <div class="center" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;height:280px;font-size:48px;color:#94a3b8">🖼️</div>
+            <p class="small" style="text-align:center;margin-top:6px;color:#64748b">${d.caption||""}</p>
+          </div>
+        </div>
+      ${end}`;
+    case "05_image_right_research":
+      return `
+      ${begin}
+        <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||""}</h1>
+        <p class="p" style="font-size:18px;margin:0 0 12px">${d.subtitle||""}</p>
+        <div class="row" style="gap:24px">
+          <div style="flex:3">
+            ${(d.bullets||[]).map(b=>`<p class="bullet-point">${b}</p>`).join("")}
+            <div style="margin-top:12px;padding:12px;background:#eff6ff;border-left:4px solid #1e3a8a;border-radius:8px">
+              <p class="hdr" style="font-size:18px;margin:0 0 6px">Research Shows:</p>
+              <p class="p" style="margin:0">${d.research||""}</p>
+            </div>
+          </div>
+          <div style="flex:2">
+            <div class="center" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;height:280px;font-size:48px;color:#94a3b8">🤝</div>
+            <p class="small" style="text-align:center;margin-top:6px;color:#64748b">${d.caption||""}</p>
+          </div>
+        </div>
+      ${end}`;
+    case "06_quote":
+      return `
+      ${begin}
+        <div class="center" style="height:540px;text-align:center">
+          <div style="max-width:900px">
+            <div class="hdr" style="font-size:28px;color:#1e3a8a">“</div>
+            <h2 class="hdr" style="font-size:38px;margin:0 0 8px">${d.quote||""}</h2>
+            <p class="p">— ${d.by||"Unknown"}</p>
+          </div>
+        </div>
+      ${end}`;
+    case "07_checklist":
+      return `
+      ${begin}
+        <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||""}</h1>
+        <ul style="padding:0;margin:0;list-style:none">
+          ${(d.items||[]).map(t=>`<li class="row" style="gap:8px;align-items:flex-start;margin:6px 0">✅<span class="p" style="font-size:18px">${t}</span></li>`).join("")}
+        </ul>
+      ${end}`;
+    case "08_conclusion":
+      return `
+      ${begin}
+        <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||"Conclusion"}</h1>
+        <div class="row" style="gap:24px">
+          <div style="flex:1">
+            <h3 class="hdr" style="font-size:20px;margin:0 0 6px">Key Takeaways</h3>
+            <ul class="p" style="margin:0 0 8px 18px">${(d.takeaways||[]).map(t=>`<li>${t}</li>`).join("")}</ul>
+          </div>
+          <div style="flex:1">
+            <h3 class="hdr" style="font-size:20px;margin:0 0 6px">Action Plan</h3>
+            <p class="p"><strong>Goal:</strong> ${d.goal||""}</p>
+            <ul class="p" style="margin:0 0 8px 18px">${(d.steps||[]).map(s=>`<li>${s}</li>`).join("")}</ul>
+          </div>
+        </div>
+      ${end}`;
+    default:
+      return `${begin}<p class="p">Unknown template: ${s.template}</p>${end}`;
+  }
+}
+
+/*** --------------------- UI BINDINGS --------------------- ***/
+const el = {
+  pasteBox: document.getElementById('pasteBox'),
+  btnUsePasted: document.getElementById('btnUsePasted'),
+  btnSample: document.getElementById('btnSample'),
+  status: document.getElementById('status'),
+  preview: document.getElementById('preview'),
+  idxBadge: document.getElementById('idxBadge'),
+  countBadge: document.getElementById('countBadge'),
+  titleInput: document.getElementById('titleInput'),
+  templateSelect: document.getElementById('templateSelect'),
+  btnPrev: document.getElementById('btnPrev'),
+  btnNext: document.getElementById('btnNext'),
+  btnAdd: document.getElementById('btnAdd'),
+  btnDelete: document.getElementById('btnDelete'),
+  metaTitle: document.getElementById('metaTitle'),
+  metaPresenter: document.getElementById('metaPresenter'),
+  metaOrg: document.getElementById('metaOrg'),
+  metaDate: document.getElementById('metaDate'),
+  btnDownloadJson: document.getElementById('btnDownloadJson'),
+  btnExportPPTX: document.getElementById('btnExportPPTX'),
+  btnExportPDF: document.getElementById('btnExportPDF'),
+  renderStage: document.getElementById('renderStage'),
+};
+
+function refreshUI(){
+  el.countBadge.textContent = `${outline.slides.length} items`;
+  if(outline.slides.length===0){
+    el.preview.innerHTML = `<div class="small">No slides yet. Paste Markdown or JSON to begin.</div>`;
+    el.idxBadge.textContent = `Slide 0 / 0`;
+    el.titleInput.value = "";
+    el.templateSelect.value = "01_title";
+    return;
+  }
+  idx = Math.max(0, Math.min(idx, outline.slides.length-1));
+  const s = outline.slides[idx];
+  el.idxBadge.textContent = `Slide ${idx+1} / ${outline.slides.length}`;
+  el.titleInput.value = s.data?.h1 || s.data?.title || `Slide ${idx+1}`;
+  el.templateSelect.value = s.template;
+  // render
+  el.preview.innerHTML = slideHTML(s);
+  // meta
+  el.metaTitle.value = outline.meta.title||"";
+  el.metaPresenter.value = outline.meta.presenter||"";
+  el.metaOrg.value = outline.meta.org||"";
+  el.metaDate.value = outline.meta.date||"";
+}
+
+function useText(txt){
+  try{
+    if(txt.trim().startsWith("{")){
+      outline = JSON.parse(txt);
+    } else {
+      outline = mdToOutline(txt);
+    }
+    if(!outline.meta) outline.meta = {};
+    if(!Array.isArray(outline.slides)) outline.slides = [];
+    if(outline.slides.length===0){
+      // Make sure at least a title slide exists
+      outline.slides.push({ template:"01_title", data:{ h1: outline.meta.title || "Untitled", subtitle:"" }});
+    }
+    idx = 0;
+    el.status.textContent = "✅ Parsed input";
+    refreshUI();
+  }catch(e){
+    console.error(e);
+    el.status.textContent = "❌ Could not parse input (Markdown or JSON expected)";
+  }
+}
+
+/*** Events ***/
+el.btnUsePasted.onclick = ()=> useText(el.pasteBox.value);
+el.btnSample.onclick = ()=>{
+  const sample = `---
+title: Best Practices for Paraprofessionals in PreK-12
+presenter: Jordan Lander
+org: Masterclass
+date: Aug 16, 2025
+---
+# Best Practices for Paraprofessionals in Pre-K-12 Classrooms
+A comprehensive guide to enhancing student success through effective support strategies.
+
+## Table of Contents
+- Introduction & Overview
+- Roles & Responsibilities
+- Inclusive Practices
+- Behavior Interventions
+- Data & Assessment
+
+## Introduction
+### What Is a Paraprofessional?
+- Supports teachers and students in classrooms
+- Works under supervision; role varies by need
+
+### Why Paraprofessionals Are Critical
+- Post-pandemic support and SEL needs
+- Individualized attention and inclusion
+`;
+  el.pasteBox.value = sample;
+  useText(sample);
+};
+
+el.titleInput.oninput = (e)=>{
+  if(!outline.slides[idx]) return;
+  outline.slides[idx].data = outline.slides[idx].data || {};
+  outline.slides[idx].data.h1 = e.target.value;
+  refreshUI();
+};
+el.templateSelect.onchange = (e)=>{
+  if(!outline.slides[idx]) return;
+  outline.slides[idx].template = e.target.value;
+  refreshUI();
+};
+el.btnPrev.onclick = ()=>{ idx = Math.max(0, idx-1); refreshUI(); };
+el.btnNext.onclick = ()=>{ idx = Math.min((outline.slides.length-1)||0, idx+1); refreshUI(); };
+el.btnAdd.onclick = ()=>{
+  outline.slides.splice(idx+1, 0, { template:"03_section", data:{ h1:"New Section", tagline:"" }});
+  idx++;
+  refreshUI();
+};
+el.btnDelete.onclick = ()=>{
+  if(!outline.slides[idx]) return;
+  outline.slides.splice(idx,1);
+  idx = Math.max(0, idx-1);
+  refreshUI();
+};
+el.metaTitle.oninput = e=>{ outline.meta.title = e.target.value; };
+el.metaPresenter.oninput = e=>{ outline.meta.presenter = e.target.value; };
+el.metaOrg.oninput = e=>{ outline.meta.org = e.target.value; };
+el.metaDate.oninput = e=>{ outline.meta.date = e.target.value; };
+
+el.btnDownloadJson.onclick = ()=>{
+  const blob = new Blob([JSON.stringify(outline,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "outline.json";
+  a.click();
+};
+
+/*** --------------------- EXPORT: PPTX --------------------- ***/
+async function renderAllToImages(){
+  // render slides into hidden stage and snapshot with html2canvas
+  const stage = el.renderStage;
+  stage.innerHTML = "";
+  stage.classList.remove("hidden");
+  const images = [];
+  for (let i=0;i<outline.slides.length;i++){
+    const s = outline.slides[i];
+    const container = document.createElement("div");
+    container.style.width = "1280px";
+    container.style.height = "720px";
+    container.style.position = "absolute";
+    container.style.left = "-99999px";
+    container.innerHTML = slideHTML(s);
+    stage.appendChild(container);
+    // wait a tick to allow fonts/layout
+    await new Promise(r=>setTimeout(r, 10));
+    const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: 2 });
+    images.push(canvas.toDataURL("image/png"));
+    container.remove();
+  }
+  stage.classList.add("hidden");
+  return images;
+}
+
+el.btnExportPPTX.onclick = async ()=>{
+  el.status.textContent = "⏳ Rendering slides…";
+  const imgs = await renderAllToImages();
+  el.status.textContent = "⏳ Building PPTX…";
+  const pptx = new PptxGenJS();
+  pptx.layout = "LAYOUT_16x9";
+  imgs.forEach(src=>{
+    const slide = pptx.addSlide();
+    slide.addImage({ data: src, x:0, y:0, w:10, h:5.625 });
+  });
+  const name = (outline.meta.title || "Masterclass") + ".pptx";
+  await pptx.writeFile({ fileName: name });
+  el.status.textContent = "✅ PPTX saved";
+};
+
+/*** --------------------- EXPORT: PDF --------------------- ***/
+el.btnExportPDF.onclick = async ()=>{
+  el.status.textContent = "⏳ Rendering slides…";
+  const imgs = await renderAllToImages();
+  el.status.textContent = "⏳ Building PDF…";
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:"landscape", unit:"pt", format:[1280,720] });
+  imgs.forEach((src,i)=>{
+    if(i>0) doc.addPage([1280,720], "landscape");
+    doc.addImage(src, "PNG", 0, 0, 1280, 720);
+  });
+  const name = (outline.meta.title || "Masterclass") + ".pdf";
+  doc.save(name);
+  el.status.textContent = "✅ PDF saved";
+};
+
+// Drag-drop support on the textarea card
+(function initDragDrop(){
+  const card = document.querySelectorAll('.card')[0];
+  card.addEventListener('dragover', e=>{ e.preventDefault(); card.style.outline="2px dashed #475569" });
+  card.addEventListener('dragleave', ()=>{ card.style.outline="none" });
+  card.addEventListener('drop', async e=>{
+    e.preventDefault(); card.style.outline="none";
+    const f = e.dataTransfer.files?.[0];
+    if(!f) return;
+    const txt = await f.text();
+    el.pasteBox.value = txt;
+    useText(txt);
+  });
+})();
+</script>
+</body>
+</html>
 
