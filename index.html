@@ -236,11 +236,33 @@ function mdToOutline(md){
 
     if(/^###\s+/.test(L)){
       const h3 = L.replace(/^###\s+/, '').trim();
-      const bullets = getList(i+1);
-      if(bullets.length===1 && /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(bullets[0])){
-        slides.push({ template:"09_video", data:{ h1:h3, youtube: bullets[0] }});
+      const raw = getList(i+1);
+      const data = { h1:h3, subtitle:"", bullets:[], icon:"", caption:"" };
+      raw.forEach(b=>{
+        if(/^VIDEO:/i.test(b)){
+          data.video = b.replace(/^VIDEO:\s*/i, '').trim();
+        }else if(/^NOTE:/i.test(b)){
+          data.notes = data.notes || [];
+          data.notes.push(b.replace(/^NOTE:\s*/i, '').trim());
+        }else if(/^LINK:/i.test(b)){
+          const rest = b.replace(/^LINK:\s*/i, '').trim();
+          const [label,url] = rest.split(/\s*\|\s*/);
+          if(label && url){
+            data.links = data.links || [];
+            data.links.push({label, url});
+          }
+        }else if(/^IMG:/i.test(b)){
+          const rest = b.replace(/^IMG:\s*/i, '').trim();
+          const [url,cap] = rest.split(/\s*\|\s*/);
+          if(url){ data.image = url; if(cap) data.caption = cap; }
+        }else{
+          data.bullets.push(b);
+        }
+      });
+      if(!data.bullets.length && data.video && !(data.links||data.image)){
+        slides.push({ template:"09_video", data:{ h1:h3, youtube:data.video, notes:data.notes||[] }});
       }else{
-        slides.push({ template:"04_two_col_bullets", data:{ h1:h3, subtitle:"", bullets, icon:"", caption:"" }});
+        slides.push({ template:"04_two_col_bullets", data });
       }
       continue;
     }
@@ -321,6 +343,8 @@ function slideHTML(s){
         <div class="row" style="gap:24px">
           <div style="flex:3">
             ${(d.bullets||[]).map(b=>`<p class="bullet-point">${b}</p>`).join("")}
+            ${(d.links||[]).map(l=>`<p class="p"><a data-href="${l.url}" href="${l.url}" target="_blank">${l.label}</a></p>`).join("")}
+            ${d.video ? `<p class="p"><a data-href="${d.video}" href="${d.video}" target="_blank">Video ▶</a></p>`:""}
             ${d.highlight ? `
               <div style="margin-top:12px;padding:12px;background:#eff6ff;border-left:4px solid #1e3a8a;border-radius:8px">
                 <p class="hdr" style="font-size:18px;margin:0 0 6px">${d.highlight.title||"Key Consideration:"}</p>
@@ -328,7 +352,8 @@ function slideHTML(s){
               </div>` : ""}
           </div>
           <div style="flex:2">
-            <div class="center" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;height:280px;font-size:48px;color:#94a3b8">🖼️</div>
+            ${d.image ? `<img src="${d.image}" style="width:100%;height:280px;object-fit:cover;border:1px solid #e2e8f0;border-radius:10px"/>`
+                      : `<div class="center" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;height:280px;font-size:48px;color:#94a3b8">🖼️</div>`}
             <p class="small" style="text-align:center;margin-top:6px;color:#64748b">${d.caption||""}</p>
           </div>
         </div>
@@ -341,13 +366,16 @@ function slideHTML(s){
         <div class="row" style="gap:24px">
           <div style="flex:3">
             ${(d.bullets||[]).map(b=>`<p class="bullet-point">${b}</p>`).join("")}
+            ${(d.links||[]).map(l=>`<p class="p"><a data-href="${l.url}" href="${l.url}" target="_blank">${l.label}</a></p>`).join("")}
+            ${d.video ? `<p class="p"><a data-href="${d.video}" href="${d.video}" target="_blank">Video ▶</a></p>`:""}
             <div style="margin-top:12px;padding:12px;background:#eff6ff;border-left:4px solid #1e3a8a;border-radius:8px">
               <p class="hdr" style="font-size:18px;margin:0 0 6px">Research Shows:</p>
               <p class="p" style="margin:0">${d.research||""}</p>
             </div>
           </div>
           <div style="flex:2">
-            <div class="center" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;height:280px;font-size:48px;color:#94a3b8">🤝</div>
+            ${d.image ? `<img src="${d.image}" style="width:100%;height:280px;object-fit:cover;border:1px solid #e2e8f0;border-radius:10px"/>`
+                      : `<div class="center" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;height:280px;font-size:48px;color:#94a3b8">🤝</div>`}
             <p class="small" style="text-align:center;margin-top:6px;color:#64748b">${d.caption||""}</p>
           </div>
         </div>
@@ -394,7 +422,10 @@ function slideHTML(s){
       ${begin}
         <h1 class="hdr" style="font-size:32px;margin:0 0 12px">${d.h1||""}</h1>
         <div class="center" style="height:540px">
-          <iframe width="800" height="450" src="${id?`https://www.youtube.com/embed/${id}`:""}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+          <a data-href="${d.youtube}" href="${d.youtube}" target="_blank" style="position:relative;display:block;width:800px;height:450px;border-radius:8px;overflow:hidden">
+            <img src="${id?`https://img.youtube.com/vi/${id}/0.jpg`:""}" style="width:100%;height:100%;object-fit:cover"/>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:64px;color:white;text-shadow:0 0 6px rgba(0,0,0,.5)">▶</div>
+          </a>
         </div>
       ${end}`;
     }
@@ -618,10 +649,14 @@ async function renderAllToImages(){
     container.style.left = "-99999px";
     container.innerHTML = slideHTML(s);
     stage.appendChild(container);
-    // wait a tick to allow fonts/layout
-    await new Promise(r=>setTimeout(r, 10));
+    await new Promise(r=>setTimeout(r,10));
+    const rect = container.getBoundingClientRect();
+    const links = [...container.querySelectorAll('[data-href]')].map(a=>{
+      const r = a.getBoundingClientRect();
+      return { url: a.getAttribute('href'), x: r.left-rect.left, y: r.top-rect.top, w: r.width, h: r.height };
+    });
     const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: 2 });
-    images.push(canvas.toDataURL("image/png"));
+    images.push({ src: canvas.toDataURL("image/png"), links, notes: s.data.notes||[] });
     container.remove();
   }
   stage.classList.add("hidden");
@@ -634,9 +669,13 @@ el.btnExportPPTX.onclick = async ()=>{
   el.status.textContent = "⏳ Building PPTX…";
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_16x9";
-  imgs.forEach(src=>{
+  imgs.forEach((img,i)=>{
     const slide = pptx.addSlide();
-    slide.addImage({ data: src, x:0, y:0, w:10, h:5.625 });
+    slide.addImage({ data: img.src, x:0, y:0, w:10, h:5.625 });
+    (img.links||[]).forEach(l=>{
+      slide.addText('', { x:l.x/128, y:l.y/128, w:l.w/128, h:l.h/128, hyperlink:{ url:l.url }, color:'FFFFFF', fill:{ type:'solid', color:'FFFFFF', transparency:100 }, line:'FFFFFF', lineSize:0 });
+    });
+    if(img.notes && img.notes.length) slide.addNotes(img.notes.join('\n'));
   });
   const name = (outline.meta.title || "Masterclass") + ".pptx";
   await pptx.writeFile({ fileName: name });
@@ -650,9 +689,10 @@ el.btnExportPDF.onclick = async ()=>{
   el.status.textContent = "⏳ Building PDF…";
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation:"landscape", unit:"pt", format:[1280,720] });
-  imgs.forEach((src,i)=>{
+  imgs.forEach((img,i)=>{
     if(i>0) doc.addPage([1280,720], "landscape");
-    doc.addImage(src, "PNG", 0, 0, 1280, 720);
+    doc.addImage(img.src, "PNG", 0, 0, 1280, 720);
+    (img.links||[]).forEach(l=>{ doc.link(l.x, l.y, l.w, l.h, { url:l.url }); });
   });
   const name = (outline.meta.title || "Masterclass") + ".pdf";
   doc.save(name);

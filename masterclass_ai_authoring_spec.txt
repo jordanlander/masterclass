@@ -20,6 +20,10 @@ Rules (strict):
 7) Do not include any prose paragraphs under H3 slides—only bullet lines starting with “- ”.
 8) Use blank lines between logical blocks. Avoid bold/italic/links – plain text is safest.
 9) To include a YouTube video slide, use an H3 heading with a single bullet containing the full YouTube URL.
+10) VIDEO: Under any ### slide, add a bullet: VIDEO: https://...
+11) NOTE: Under any ### slide, add one or more NOTE: ... lines (speaker notes; not shown on slide).
+12) LINK: Under any ### slide, add LINK: Label | https://...
+13) IMG (optional): IMG: https://... | optional caption (shows right-side image).
 
 Example (you can copy this shape):
 
@@ -89,7 +93,14 @@ Rules (strict):
    "05_image_right_research", "06_quote", "07_checklist", "08_conclusion",
    "09_video"
 
-4) Field hints by template:
+4) Additional optional fields allowed on any slide’s data:
+   "video": "https://...",
+   "notes": ["one-sentence note", "another note"],
+   "links": [ { "label": "Resource", "url": "https://..." } ],
+   "image": "https://...",
+   "caption": "optional"
+
+5) Field hints by template:
    • 01_title → data: { h1, subtitle }
    • 02_toc   → data: { h1, items[] }
    • 03_section → data: { h1, tagline, icon? }
