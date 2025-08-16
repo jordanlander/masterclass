@@ -130,18 +130,19 @@ Subtitle
             <label class="small">Current Title</label>
             <label class="small">Template</label>
             <input id="titleInput" class="input"/>
-            <select id="templateSelect" class="input">
-              <option>01_title</option>
-              <option>02_toc</option>
-              <option>03_section</option>
-              <option>04_two_col_bullets</option>
-              <option>05_image_right_research</option>
-              <option>06_quote</option>
-              <option>07_checklist</option>
-              <option>08_conclusion</option>
-              <option>09_video</option>
-            </select>
-          </div>
+              <select id="templateSelect" class="input">
+                <option>01_title</option>
+                <option>02_toc</option>
+                <option>03_section</option>
+                <option>04_two_col_bullets</option>
+                <option>05_image_right_research</option>
+                <option>06_quote</option>
+                <option>07_checklist</option>
+                <option>08_conclusion</option>
+                <option>09_video</option>
+                <option>10_table</option>
+              </select>
+            </div>
           <div class="toolbar mt-3" style="justify-content:space-between">
             <div class="toolbar">
               <button class="btn secondary" id="btnPrev">◀ Prev</button>
@@ -213,12 +214,23 @@ function mdToOutline(md){
 
   function getList(start){
     const out = [];
-    for(let i=start;i<lines.length;i++){
+    let i = start;
+    let tableMode = false;
+    for(; i<lines.length; i++){
       const L = lines[i];
-      if(/^\s*-\s+/.test(L)) out.push(L.replace(/^\s*-\s+/, '').trim());
-      else if(/^#/.test(L) || !L.trim()) break;
-      else break;
+      if(/^\s*-\s+/.test(L)){
+        const item = L.replace(/^\s*-\s+/, '').trim();
+        out.push(item);
+        tableMode = /^TABLE:/i.test(item);
+      }else if(tableMode && /^\s*\|/.test(L)){
+        out.push(L.trim());
+      }else if(/^#/.test(L) || !L.trim()){
+        break;
+      }else{
+        break;
+      }
     }
+    getList.next = i;
     return out;
   }
 
@@ -233,8 +245,9 @@ function mdToOutline(md){
     }
 
     if(/^##\s+Table of Contents/i.test(L)){
-      const items = getList(i+1);
+      const {items, next} = getList(i+1);
       slides.push({ template:"02_toc", data:{ h1:"Table of Contents", items }});
+      i = next - 1;
       continue;
     }
 
@@ -247,29 +260,44 @@ function mdToOutline(md){
     if(/^###\s+/.test(L)){
       const h3 = L.replace(/^###\s+/, '').trim();
       const raw = getList(i+1);
+      const next = getList.next;
       const data = { h1:h3, subtitle:"", bullets:[], icon:"", caption:"" };
+      let tableMode = false;
       raw.forEach(b=>{
-        if(/^VIDEO:/i.test(b)){
-          data.video = b.replace(/^VIDEO:\s*/i, '').trim();
-        }else if(/^NOTE:/i.test(b)){
-          data.notes = data.notes || [];
-          data.notes.push(b.replace(/^NOTE:\s*/i, '').trim());
-        }else if(/^LINK:/i.test(b)){
-          const rest = b.replace(/^LINK:\s*/i, '').trim();
-          const [label,url] = rest.split(/\s*\|\s*/);
-          if(label && url){
-            data.links = data.links || [];
-            data.links.push({label, url});
-          }
-        }else if(/^IMG:/i.test(b)){
-          const rest = b.replace(/^IMG:\s*/i, '').trim();
-          const [url,cap] = rest.split(/\s*\|\s*/);
-          if(url){ data.image = url; if(cap) data.caption = cap; }
+        if(/^TABLE:/i.test(b)){
+          tableMode = true;
+          data.table = { headers:[], rows:[] };
+        }else if(tableMode && /^\|/.test(b)){
+          const cells = b.split('|').slice(1,-1).map(c=>c.trim());
+          if(!data.table.headers.length) data.table.headers = cells;
+          else data.table.rows.push(cells);
         }else{
-          data.bullets.push(b);
+          tableMode = false;
+          if(/^VIDEO:/i.test(b)){
+            data.video = b.replace(/^VIDEO:\s*/i, '').trim();
+          }else if(/^NOTE:/i.test(b)){
+            data.notes = data.notes || [];
+            data.notes.push(b.replace(/^NOTE:\s*/i, '').trim());
+          }else if(/^LINK:/i.test(b)){
+            const rest = b.replace(/^LINK:\s*/i, '').trim();
+            const [label,url] = rest.split(/\s*\|\s*/);
+            if(label && url){
+              data.links = data.links || [];
+              data.links.push({label, url});
+            }
+          }else if(/^IMG:/i.test(b)){
+            const rest = b.replace(/^IMG:\s*/i, '').trim();
+            const [url,cap] = rest.split(/\s*\|\s*/);
+            if(url){ data.image = url; if(cap) data.caption = cap; }
+          }else{
+            data.bullets.push(b);
+          }
         }
       });
-      if(!data.bullets.length && data.video && !(data.links||data.image)){
+      i = next - 1;
+      if(data.table){
+        slides.push({ template:"10_table", data });
+      }else if(!data.bullets.length && data.video && !(data.links||data.image)){
         slides.push({ template:"09_video", data:{ h1:h3, youtube:data.video, notes:data.notes||[] }});
       }else{
         slides.push({ template:"04_two_col_bullets", data });
@@ -409,10 +437,10 @@ function slideHTML(s){
           ${(d.items||[]).map(t=>`<li class="row" style="gap:8px;align-items:flex-start;margin:6px 0">✅<span class="p" style="font-size:18px">${t}</span></li>`).join("")}
         </ul>
       ${end}`;
-    case "08_conclusion":
-      return `
-      ${begin}
-        <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||"Conclusion"}</h1>
+      case "08_conclusion":
+        return `
+        ${begin}
+          <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||"Conclusion"}</h1>
         <div class="row" style="gap:24px">
           <div style="flex:1">
             <h3 class="hdr" style="font-size:20px;margin:0 0 6px">Key Takeaways</h3>
@@ -424,13 +452,20 @@ function slideHTML(s){
             <ul class="p" style="margin:0 0 8px 18px">${(d.steps||[]).map(s=>`<li>${s}</li>`).join("")}</ul>
           </div>
         </div>
-      ${end}`;
-    case "09_video": {
-      const m = (d.youtube||"").match(/(?:youtu.be\/|watch\?v=|embed\/)([^?&]+)/);
-      const id = m ? m[1] : "";
-      return `
-      ${begin}
-        <h1 class="hdr" style="font-size:32px;margin:0 0 12px">${d.h1||""}</h1>
+        ${end}`;
+      case "10_table":
+        return `
+        ${begin}
+          <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||""}</h1>
+          ${(d.bullets||[]).map(b=>`<p class="bullet-point">${b}</p>`).join("")}
+          ${d.table?`<table style="width:100%;border-collapse:collapse;margin-top:16px"><thead><tr>${(d.table.headers||[]).map(h=>`<th style="border:1px solid #94a3b8;padding:4px;background:#eff6ff">${h}</th>`).join("")}</tr></thead><tbody>${(d.table.rows||[]).map(r=>`<tr>${r.map(c=>`<td style="border:1px solid #94a3b8;padding:4px">${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`:""}
+        ${end}`;
+      case "09_video": {
+        const m = (d.youtube||"").match(/(?:youtu.be\/|watch\?v=|embed\/)([^?&]+)/);
+        const id = m ? m[1] : "";
+        return `
+        ${begin}
+          <h1 class="hdr" style="font-size:32px;margin:0 0 12px">${d.h1||""}</h1>
         <div class="center" style="height:540px">
           <a data-href="${d.youtube}" href="${d.youtube}" target="_blank" style="position:relative;display:block;width:800px;height:450px;border-radius:8px;overflow:hidden">
             <img src="${id?`https://img.youtube.com/vi/${id}/0.jpg`:""}" style="width:100%;height:100%;object-fit:cover"/>
