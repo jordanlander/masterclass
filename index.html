@@ -34,6 +34,9 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
 .badge{background:#1e293b;padding:4px 8px;border-radius:999px;color:#cbd5e1;font-size:12px}
 .split{display:grid;grid-template-columns:420px 1fr;gap:16px}
 .preview{background:white;border-radius:12px;overflow:auto;height:560px;padding:8px}
+.slide-list{list-style:none;padding:0;margin:8px 0;max-height:160px;overflow:auto}
+.slide-list li{padding:4px 8px;border-radius:6px;margin-bottom:4px;background:#1e293b;cursor:grab}
+.slide-list li.active{background:var(--brand)}
 
 /* ------------- SLIDE THEME (16:9, 1280x720) ------------- */
 .slide-container{width:1280px;min-height:720px;position:relative;background:#fff;border-radius:12px;overflow:hidden}
@@ -103,6 +106,7 @@ Subtitle
             <strong>Slides</strong>
             <span class="badge" id="countBadge">0 items</span>
           </div>
+          <ul id="slideList" class="slide-list"></ul>
           <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
             <label class="small">Current Title</label>
             <label class="small">Template</label>
@@ -169,6 +173,18 @@ Subtitle
 /*** --------------------- OUTLINE + PARSER --------------------- ***/
 let outline = { meta:{ title:"", presenter:"", org:"", date:"" }, slides:[] };
 let idx = 0;
+
+function saveOutline(){
+  localStorage.setItem('mc_outline', JSON.stringify(outline));
+}
+function loadOutline(){
+  const saved = localStorage.getItem('mc_outline');
+  if(saved){
+    try{ outline = JSON.parse(saved); }
+    catch(e){ console.error('Failed to parse saved outline', e); }
+  }
+}
+loadOutline();
 
 function mdToOutline(md){
   const lines = md.split(/\r?\n/);
@@ -370,8 +386,9 @@ const el = {
   status: document.getElementById('status'),
   preview: document.getElementById('preview'),
   idxBadge: document.getElementById('idxBadge'),
-  countBadge: document.getElementById('countBadge'),
-  titleInput: document.getElementById('titleInput'),
+    countBadge: document.getElementById('countBadge'),
+    slideList: document.getElementById('slideList'),
+    titleInput: document.getElementById('titleInput'),
   templateSelect: document.getElementById('templateSelect'),
   btnPrev: document.getElementById('btnPrev'),
   btnNext: document.getElementById('btnNext'),
@@ -388,7 +405,19 @@ const el = {
 };
 
 function refreshUI(){
+  if(!outline.meta) outline.meta = {};
+  if(!Array.isArray(outline.slides)) outline.slides = [];
+  saveOutline();
   el.countBadge.textContent = `${outline.slides.length} items`;
+  el.slideList.innerHTML = "";
+  outline.slides.forEach((s,i)=>{
+    const li = document.createElement('li');
+    li.textContent = `${i+1}. ${s.data?.h1 || s.data?.title || `Slide ${i+1}`}`;
+    li.dataset.index = i;
+    li.draggable = true;
+    if(i===idx) li.classList.add('active');
+    el.slideList.appendChild(li);
+  });
   if(outline.slides.length===0){
     el.preview.innerHTML = `<div class="small">No slides yet. Paste Markdown or JSON to begin.</div>`;
     el.idxBadge.textContent = `Slide 0 / 0`;
@@ -488,10 +517,57 @@ el.btnDelete.onclick = ()=>{
   idx = Math.max(0, idx-1);
   refreshUI();
 };
-el.metaTitle.oninput = e=>{ outline.meta.title = e.target.value; };
-el.metaPresenter.oninput = e=>{ outline.meta.presenter = e.target.value; };
-el.metaOrg.oninput = e=>{ outline.meta.org = e.target.value; };
-el.metaDate.oninput = e=>{ outline.meta.date = e.target.value; };
+el.metaTitle.oninput = e=>{ outline.meta.title = e.target.value; refreshUI(); };
+el.metaPresenter.oninput = e=>{ outline.meta.presenter = e.target.value; refreshUI(); };
+el.metaOrg.oninput = e=>{ outline.meta.org = e.target.value; refreshUI(); };
+el.metaDate.oninput = e=>{ outline.meta.date = e.target.value; refreshUI(); };
+
+let dragIndex = null;
+el.slideList.addEventListener('click', e=>{
+  const li = e.target.closest('li');
+  if(!li) return;
+  idx = Number(li.dataset.index);
+  refreshUI();
+});
+el.slideList.addEventListener('dragstart', e=>{
+  const li = e.target.closest('li');
+  if(!li) return;
+  dragIndex = Number(li.dataset.index);
+});
+el.slideList.addEventListener('dragover', e=>{ e.preventDefault(); });
+el.slideList.addEventListener('drop', e=>{
+  e.preventDefault();
+  const li = e.target.closest('li');
+  let to = li ? Number(li.dataset.index) : outline.slides.length;
+  if(dragIndex===null) return;
+  const current = outline.slides[idx];
+  const slide = outline.slides.splice(dragIndex,1)[0];
+  outline.slides.splice(dragIndex < to ? to-1 : to, 0, slide);
+  idx = outline.slides.indexOf(current);
+  dragIndex = null;
+  refreshUI();
+});
+
+document.addEventListener('keydown', e=>{
+  if(!e.altKey) return;
+  if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    if(idx>0){
+      const slide = outline.slides.splice(idx,1)[0];
+      outline.slides.splice(idx-1,0,slide);
+      idx--;
+      refreshUI();
+    }
+  } else if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    if(idx<outline.slides.length-1){
+      const slide = outline.slides.splice(idx,1)[0];
+      outline.slides.splice(idx+1,0,slide);
+      idx++;
+      refreshUI();
+    }
+  }
+});
 
 el.btnDownloadJson.onclick = ()=>{
   const blob = new Blob([JSON.stringify(outline,null,2)], {type:"application/json"});
@@ -572,6 +648,8 @@ el.btnExportPDF.onclick = async ()=>{
     useText(txt);
   });
 })();
+
+refreshUI();
 </script>
 </body>
 </html>
