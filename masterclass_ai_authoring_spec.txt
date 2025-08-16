@@ -1,0 +1,125 @@
+MASTERCLASS AUTHORING SPEC (v1)
+For use with the one-file Masterclass index.html (Markdown or JSON import)
+
+GOAL
+Produce research → slide content that the Masterclass app can ingest with zero cleanup.
+
+––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+A) PREFERRED OUTPUT: MARKDOWN FORMAT
+––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+
+Rules (strict):
+1) Use only headings and hyphen bullets. No code blocks, no tables, no images.
+2) Headings allowed: H1 (#), H2 (##), H3 (###). Nothing deeper.
+3) After the H1 title, the very next line may be a one-line subtitle (plain text).
+4) “Table of Contents” must be an H2 exactly:  ## Table of Contents
+   Immediately follow it with a simple list of sections using hyphen bullets.
+5) Content sections must be H2. Individual slides within a section must be H3.
+   Bullets under each H3 become the slide’s body.
+6) Keep each bullet ≤ 100 characters. Plain text only.
+7) Do not include any prose paragraphs under H3 slides—only bullet lines starting with “- ”.
+8) Use blank lines between logical blocks. Avoid bold/italic/links – plain text is safest.
+
+Example (you can copy this shape):
+
+# Best Practices for Paraprofessionals in Pre-K–12 Classrooms
+A comprehensive guide to effective support strategies.
+
+## Table of Contents
+- Introduction & Overview
+- Roles & Responsibilities
+- Inclusive Practices
+- Behavior Supports
+- Data & Assessment
+
+## Introduction & Overview
+### What Is a Paraprofessional?
+- Supports teachers and students in classrooms
+- Works under teacher supervision; role varies by need
+- Aims for student access, dignity, independence
+
+### Why This Role Is Critical
+- Post-pandemic recovery and SEL needs
+- Individualized attention within inclusive classrooms
+- Carryover of IEP/504 accommodations
+
+## Roles & Responsibilities
+### What Paras Do (Do List)
+- Implement plans and accommodations
+- Collect quick, objective data
+- Collaborate with teacher and service providers
+
+### What Paras Don’t Do (Don’t List)
+- Change IEP goals/services independently
+- Promise secrecy or share private info
+- Use restraint if not trained/authorized
+
+[Continue using the same pattern for all sections…]
+
+
+Notes:
+• Front-matter (Presenter/Org/Date) is optional; you can set those in the UI.
+• If you include them, keep them as plain lines near the top (no special syntax needed).
+
+––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+B) ALTERNATIVE OUTPUT: OUTLINE JSON FORMAT
+––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+
+Rules (strict):
+1) JSON only. No comments. No trailing commas. UTF-8.
+2) Shape:
+
+{
+  "meta": { "title": "string", "presenter": "string", "org": "string", "date": "string" },
+  "slides": [
+    { "template": "01_title", "data": { "h1": "Title", "subtitle": "Subtitle" } },
+    { "template": "02_toc",   "data": { "h1": "Table of Contents", "items": ["Intro","Roles","…"] } },
+    { "template": "03_section","data": { "h1": "Introduction", "tagline": "" } },
+    { "template": "04_two_col_bullets",
+      "data": { "h1": "What Is a Paraprofessional?",
+                "subtitle": "",
+                "bullets": ["Supports teachers/students", "Works under supervision", "Targets independence"],
+                "caption": "" } }
+  ]
+}
+
+3) Allowed template ids:
+   "01_title", "02_toc", "03_section", "04_two_col_bullets",
+   "05_image_right_research", "06_quote", "07_checklist", "08_conclusion"
+
+4) Field hints by template:
+   • 01_title → data: { h1, subtitle }
+   • 02_toc   → data: { h1, items[] }
+   • 03_section → data: { h1, tagline, icon? }
+   • 04_two_col_bullets → data: { h1, subtitle, bullets[], highlight?, caption? }
+   • 05_image_right_research → data: { h1, subtitle, bullets[], research, caption? }
+   • 06_quote → data: { quote, by }
+   • 07_checklist → data: { h1, items[] }
+   • 08_conclusion → data: { h1, takeaways[], goal, steps[] }
+
+Example minimal JSON:
+
+{
+  "meta": { "title": "Paraprofessional Masterclass", "presenter": "Jordan Lander", "org": "Masterclass", "date": "2025-08-16" },
+  "slides": [
+    { "template": "01_title", "data": { "h1": "Paraprofessional Masterclass", "subtitle": "Practical moves that change outcomes" } },
+    { "template": "02_toc", "data": { "h1": "Table of Contents", "items": ["Introduction","Roles","Inclusive Practices","Behavior","Data"] } },
+    { "template": "03_section", "data": { "h1": "Introduction", "tagline": "Why this role matters" } },
+    { "template": "04_two_col_bullets", "data": { "h1": "What Is a Paraprofessional?", "subtitle": "", "bullets": ["Supports teachers/students","Implements plans","Collects quick data"] } },
+    { "template": "06_quote", "data": { "quote": "Every interaction is an intervention.", "by": "Unknown" } }
+  ]
+}
+
+––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+C) VALIDATION CHECKLIST BEFORE YOU HAND IT OFF
+––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+• If Markdown: starts with one H1; has “## Table of Contents” with hyphen bullets; sections are H2; slides are H3 with hyphen bullets only.
+• If JSON: parses cleanly; uses only allowed template ids; all arrays use double quotes; no trailing commas.
+• Keep bullets short, plain text, no links or formatting.
+• No student-identifying info; keep language objective.
+
+OUTPUT CONTRACT FOR THE AI
+• Return ONLY the Markdown (Option A) or ONLY the JSON (Option B).
+• Do not include explanations, backticks, or commentary. Just the content.
+
+END OF SPEC
