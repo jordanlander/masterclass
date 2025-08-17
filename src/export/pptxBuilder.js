@@ -1,6 +1,24 @@
 /**
  * Build a PPTX presentation from a structured slide model.
  */
+function parseBold(text) {
+  const regex = /\*\*(.*?)\*\*/g;
+  let lastIndex = 0;
+  const parts = [];
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ text: text.slice(lastIndex, match.index) });
+    }
+    parts.push({ text: match[1], options: { bold: true } });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push({ text: text.slice(lastIndex) });
+  }
+  return parts.length ? parts : text;
+}
+
 export function buildPptx(slides, meta = {}) {
   const pptx = new PptxGenJS();
   pptx.layout = 'LAYOUT_16x9';
@@ -17,24 +35,31 @@ export function buildPptx(slides, meta = {}) {
       let y = 0.5;
       slideModel.elements.forEach(el => {
         switch (el.type) {
-          case 'title':
-            slide.addText(el.text || '', { x: 0.5, y, w: 9, fontSize: 32, bold: true, ...(el.options || {}) });
-            y += 1;
+          case 'title': {
+            const titleText = (el.text || '').replace(/\*\*(.*?)\*\*/g, '$1');
+            const options = { x: 0.5, y, w: 9, h: 1, fontSize: 32, bold: true, ...(el.options || {}) };
+            slide.addText(titleText, options);
+            y += options.h;
             break;
+          }
           case 'text': {
-            const text = el.text || '';
+            const rawText = el.text || '';
             if (el.options && typeof el.options.y === 'number') {
               y = el.options.y;
             }
-            slide.addText(text, { x: 0.5, y, w: 9, fontSize: 18, ...(el.options || {}) });
-            const lines = text.split('\n').length;
-            y += 0.6 * lines;
+            const lines = rawText.split('\n').length;
+            const options = { x: 0.5, y, w: 9, h: 0.6 * lines, fontSize: 18, ...(el.options || {}) };
+            const formatted = parseBold(rawText);
+            slide.addText(formatted, options);
+            y += options.h;
             break;
           }
-          case 'image':
-            slide.addImage({ path: el.src, x: 0.5, y, w: 4, h: 3, ...(el.options || {}) });
-            y += 3.5;
+          case 'image': {
+            const options = { path: el.src, x: 0.5, y, w: 4, h: 3, ...(el.options || {}) };
+            slide.addImage(options);
+            y += options.h + 0.5;
             break;
+          }
         }
       });
     }

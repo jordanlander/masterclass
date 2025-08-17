@@ -20,6 +20,28 @@ export interface SlideModel {
 declare const PptxGenJS: any;
 
 /**
+ * Parse simple markdown for **bold** segments and return a value suitable for PptxGenJS addText.
+ * If no markdown is present the original string is returned.
+ */
+function parseBold(text: string): any {
+  const regex = /\*\*(.*?)\*\*/g;
+  let lastIndex = 0;
+  const parts: any[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ text: text.slice(lastIndex, match.index) });
+    }
+    parts.push({ text: match[1], options: { bold: true } });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push({ text: text.slice(lastIndex) });
+  }
+  return parts.length ? parts : text;
+}
+
+/**
  * Convert an array of slide models into a PptxGenJS presentation.
  * @param slides Array of slide definitions
  * @param meta Optional metadata such as title
@@ -40,24 +62,31 @@ export function buildPptx(slides: SlideModel[], meta: { title?: string } = {}): 
       let y = 0.5;
       slideModel.elements.forEach(el => {
         switch (el.type) {
-          case 'title':
-            slide.addText(el.text || '', { x: 0.5, y, w: 9, fontSize: 32, bold: true, ...(el.options || {}) });
-            y += 1;
+          case 'title': {
+            const titleText = (el.text || '').replace(/\*\*(.*?)\*\*/g, '$1');
+            const options: any = { x: 0.5, y, w: 9, h: 1, fontSize: 32, bold: true, ...(el.options || {}) };
+            slide.addText(titleText, options);
+            y += options.h;
             break;
+          }
           case 'text': {
-            const text = el.text || '';
+            const rawText = el.text || '';
             if (el.options && typeof el.options.y === 'number') {
               y = el.options.y;
             }
-            slide.addText(text, { x: 0.5, y, w: 9, fontSize: 18, ...(el.options || {}) });
-            const lines = text.split('\n').length;
-            y += 0.6 * lines;
+            const lines = rawText.split('\n').length;
+            const options: any = { x: 0.5, y, w: 9, h: 0.6 * lines, fontSize: 18, ...(el.options || {}) };
+            const formatted = parseBold(rawText);
+            slide.addText(formatted, options);
+            y += options.h;
             break;
           }
-          case 'image':
-            slide.addImage({ path: el.src, x: 0.5, y, w: 4, h: 3, ...(el.options || {}) });
-            y += 3.5;
+          case 'image': {
+            const options: any = { path: el.src, x: 0.5, y, w: 4, h: 3, ...(el.options || {}) };
+            slide.addImage(options);
+            y += options.h + 0.5;
             break;
+          }
         }
       });
     }
