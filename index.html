@@ -361,6 +361,10 @@ function mdToOutline(md){
             const rest = b.replace(/^IMG:\s*/i, '').trim();
             const [url,cap] = rest.split(/\s*\|\s*/);
             if(url){ data.image = url; if(cap) data.caption = cap; }
+          }else if(/^HIGHLIGHT:/i.test(b)){
+            const rest = b.replace(/^HIGHLIGHT:\s*/i, '').trim();
+            const [title,text] = rest.split(/\s*\|\s*/);
+            data.highlight = { title: title || 'Key Consideration:', text: text || '' };
           }else{
             data.bullets.push(b);
           }
@@ -868,16 +872,19 @@ async function renderAllToImages(opt={}){
 
 el.btnExportPPTX.onclick = async ()=>{
   try{
+    showProgress();
     el.status.textContent = "⏳ Rendering slides…";
     const { images, hotspotsBySlide } = await renderAllToImages({ lean: el.leanToggle.checked });
 
+    el.status.textContent = "⏳ Building PPTX…";
+    setProgress(90);
     const PptxCtor = window.PptxGenJS?.default || window.PptxGenJS;
     if (!PptxCtor) {
       alert("PPTX library not loaded. Check the <script> tag for pptxgenjs.");
+      hideProgress();
       return;
     }
 
-    el.status.textContent = "⏳ Building PPTX…";
     const pptx = new PptxCtor();
     pptx.layout = "LAYOUT_16x9";
 
@@ -900,9 +907,12 @@ el.btnExportPPTX.onclick = async ()=>{
 
     const name = (outline.meta.title || "Masterclass") + ".pptx";
     await pptx.writeFile({ fileName: name });
+    setProgress(100);
+    hideProgress();
     el.status.textContent = "✅ PPTX saved";
   }catch(err){
     console.error(err);
+    hideProgress();
     alert("PPTX export failed. Open the console for details.");
     el.status.textContent = "❌ PPTX export failed";
   }
