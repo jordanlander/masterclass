@@ -818,9 +818,10 @@ async function renderAllToImages(onProgress, opt={}){
       return { url: a.getAttribute('href'), x: r.left-rect.left, y: r.top-rect.top, w: r.width, h: r.height };
     });
     const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: lean?1:2, useCORS: true });
-    const fmt = lean?"image/jpeg":"image/png";
-    const dataUrl = canvas.toDataURL(fmt, lean?0.7:1.0);
-    images.push({ src: dataUrl, format: lean?"JPEG":"PNG", links, notes: s.data.notes||[] });
+    // Use PNG for all exports; JPEG output caused PPTX generation to fail in lean mode
+    const fmt = "image/png";
+    const dataUrl = canvas.toDataURL(fmt);
+    images.push({ src: dataUrl, format: "PNG", links, notes: s.data.notes||[] });
     container.remove();
     if(onProgress) onProgress((i+1)/outline.slides.length*100);
   }
