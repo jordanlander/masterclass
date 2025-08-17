@@ -219,7 +219,6 @@ Subtitle
   </div>
 
 <script type="module">
-import { buildPptx } from './src/export/pptxBuilder.js';
 import { buildOdp } from './src/export/odpBuilder.js';
 /*** --------------------- OUTLINE + PARSER --------------------- ***/
 let outline = { meta:{ title:"", presenter:"", org:"", date:"", theme:0 }, slides:[] };
@@ -795,68 +794,116 @@ el.btnDownloadJson.onclick = ()=>{
 };
 
 /*** --------------------- EXPORT: PPTX --------------------- ***/
-async function waitForImages(container){
-  const imgs = Array.from(container.querySelectorAll('img'));
-  await Promise.all(imgs.map(img=>{
-    if(img.complete) return Promise.resolve();
-    return new Promise(res=>{ img.onload = img.onerror = res; });
-  }));
+async function imgToDataURL(url){
+  try{
+    const res = await fetch(url, { mode: "cors" });
+    const blob = await res.blob();
+    return await new Promise((resolve)=>{
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.readAsDataURL(blob);
+    });
+  }catch{ return ""; }
 }
-// Legacy screenshot renderer retained for PDF export
-async function renderSlidesToImages(onProgress, opt={}){
-  // render slides into hidden stage and snapshot with html2canvas
+
+async function inlineSlideImages(container){
+  const imgs = Array.from(container.querySelectorAll("img[src]"));
+  for (const im of imgs){
+    const src = im.getAttribute("src") || "";
+    if (!src || src.startsWith("data:")) continue;
+    im.setAttribute("crossorigin","anonymous");
+    const data = await imgToDataURL(src);
+    if (data) im.setAttribute("src", data);
+  }
+}
+
+async function renderAllToImages(opt={}){
   const stage = el.renderStage;
   stage.innerHTML = "";
   stage.classList.remove("hidden");
+
   const images = [];
+  const hotspotsBySlide = [];
   const lean = opt.lean;
-  for (let i=0;i<outline.slides.length;i++){
+
+  for (let i = 0; i < outline.slides.length; i++){
     const s = outline.slides[i];
     const container = document.createElement("div");
-    container.style.width = "1280px";
-    container.style.height = "720px";
-    container.style.position = "absolute";
-    container.style.left = "-99999px";
+    Object.assign(container.style,{
+      width:"1280px", height:"720px", position:"absolute", left:"-99999px"
+    });
     container.innerHTML = slideHTML(s);
     stage.appendChild(container);
-    await waitForImages(container);
-    await new Promise(r=>setTimeout(r,10));
-    const rect = container.getBoundingClientRect();
-    const links = [...container.querySelectorAll('[data-href]')].map(a=>{
+
+    await inlineSlideImages(container);
+    await new Promise(r=>setTimeout(r, 20));
+
+    const rects = [];
+    const root = container.querySelector(".slide-container") || container;
+    const rootRect = root.getBoundingClientRect();
+    container.querySelectorAll("[data-href]").forEach(a=>{
       const r = a.getBoundingClientRect();
-      return { url: a.getAttribute('href'), x: r.left-rect.left, y: r.top-rect.top, w: r.width, h: r.height };
+      rects.push({
+        x: r.left - rootRect.left,
+        y: r.top  - rootRect.top,
+        w: r.width,
+        h: r.height,
+        url: a.getAttribute("href")
+      });
     });
-    const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: lean?1:2, useCORS: true });
-    // Use PNG for all exports; JPEG output caused PPTX generation to fail in lean mode
-    const fmt = "image/png";
-    const dataUrl = canvas.toDataURL(fmt);
-    images.push({ src: dataUrl, format: "PNG", links, notes: s.data.notes||[] });
+    hotspotsBySlide.push(rects);
+
+    const canvas = await html2canvas(container, {
+      backgroundColor: "#ffffff",
+      scale: lean?1:2,
+      useCORS: true,
+      allowTaint: false
+    });
+    images.push(canvas.toDataURL("image/png"));
     container.remove();
-    if(onProgress) onProgress((i+1)/outline.slides.length*100);
   }
   stage.classList.add("hidden");
-  return images;
+  return { images, hotspotsBySlide };
 }
 
 el.btnExportPPTX.onclick = async ()=>{
-  try {
-    showProgress();
+  try{
     el.status.textContent = "⏳ Rendering slides…";
-    const lean = el.leanToggle.checked;
-    const imgs = await renderSlidesToImages(p=>setProgress(p*0.8), { lean });
+    const { images, hotspotsBySlide } = await renderAllToImages({ lean: el.leanToggle.checked });
+
+    const PptxCtor = window.PptxGenJS?.default || window.PptxGenJS;
+    if (!PptxCtor) {
+      alert("PPTX library not loaded. Check the <script> tag for pptxgenjs.");
+      return;
+    }
+
     el.status.textContent = "⏳ Building PPTX…";
-    setProgress(90);
-    const slides = imgs.map(img => ({ src: img.src, notes: img.notes }));
-    const pptx = buildPptx(slides, { title: outline.meta.title });
-    const pptxBlob = await pptx.write('blob');
-    setProgress(100);
-    hideProgress();
+    const pptx = new PptxCtor();
+    pptx.layout = "LAYOUT_16x9";
+
+    const pxToInX = px => (px/1280)*10;
+    const pxToInY = px => (px/720)*5.625;
+
+    images.forEach((src,i)=>{
+      const slide = pptx.addSlide();
+      slide.addImage({ data: src, x: 0, y: 0, w: 10, h: 5.625 });
+      (hotspotsBySlide[i]||[]).forEach(h=>{
+        slide.addText(" ",{
+          x:pxToInX(h.x), y:pxToInY(h.y),
+          w:pxToInX(h.w), h:pxToInY(h.h),
+          hyperlink:{ url:h.url },
+          fill:{ color:"FFFFFF", transparency:100 },
+          line:{ color:"FFFFFF", transparency:100 }
+        });
+      });
+    });
+
     const name = (outline.meta.title || "Masterclass") + ".pptx";
-    showDownload("PPTX ready", pptxBlob, name);
-    el.status.textContent = "✅ PPTX ready";
-  } catch(err){
-    console.error('Failed to export PPTX', err);
-    hideProgress();
+    await pptx.writeFile({ fileName: name });
+    el.status.textContent = "✅ PPTX saved";
+  }catch(err){
+    console.error(err);
+    alert("PPTX export failed. Open the console for details.");
     el.status.textContent = "❌ PPTX export failed";
   }
 };
@@ -866,11 +913,10 @@ el.btnExportODP.onclick = async ()=>{
   try {
     showProgress();
     el.status.textContent = "⏳ Rendering slides…";
-    const lean = el.leanToggle.checked;
-    const imgs = await renderSlidesToImages(p=>setProgress(p*0.8), { lean });
+    const { images } = await renderAllToImages({ lean: el.leanToggle.checked });
     el.status.textContent = "⏳ Building ODP…";
     setProgress(90);
-    const slides = imgs.map(img => ({ src: img.src, notes: img.notes }));
+    const slides = images.map((src, i) => ({ src, notes: outline.slides[i].data.notes || [] }));
     const blob = await buildOdp(slides, { title: outline.meta.title });
     setProgress(100);
     hideProgress();
@@ -889,16 +935,15 @@ el.btnExportPDF.onclick = async ()=>{
   try {
     showProgress();
     el.status.textContent = "⏳ Rendering slides…";
-    const lean = el.leanToggle.checked;
-    const imgs = await renderSlidesToImages(p=>setProgress(p*0.8), { lean });
+    const { images, hotspotsBySlide } = await renderAllToImages({ lean: el.leanToggle.checked });
     el.status.textContent = "⏳ Building PDF…";
     setProgress(90);
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation:"landscape", unit:"pt", format:[1280,720] });
-    imgs.forEach((img,i)=>{
+    images.forEach((src,i)=>{
       if(i>0) doc.addPage([1280,720], "landscape");
-      doc.addImage(img.src, img.format, 0, 0, 1280, 720);
-      (img.links||[]).forEach(l=>{ doc.link(l.x, l.y, l.w, l.h, { url:l.url }); });
+      doc.addImage(src, "PNG", 0, 0, 1280, 720);
+      (hotspotsBySlide[i]||[]).forEach(h=>{ doc.link(h.x, h.y, h.w, h.h, { url:h.url }); });
     });
     const name = (outline.meta.title || "Masterclass") + ".pdf";
     const blob = doc.output('blob');
