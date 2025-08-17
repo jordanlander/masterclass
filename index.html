@@ -701,7 +701,7 @@ async function renderAllToImages(){
       const r = a.getBoundingClientRect();
       return { url: a.getAttribute('href'), x: r.left-rect.left, y: r.top-rect.top, w: r.width, h: r.height };
     });
-    const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: 2 });
+    const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: 2, useCORS: true });
     images.push({ src: canvas.toDataURL("image/png"), links, notes: s.data.notes||[] });
     container.remove();
   }
@@ -710,39 +710,49 @@ async function renderAllToImages(){
 }
 
 el.btnExportPPTX.onclick = async ()=>{
-  el.status.textContent = "⏳ Rendering slides…";
-  const imgs = await renderAllToImages();
-  el.status.textContent = "⏳ Building PPTX…";
-  const pptx = new PptxGenJS();
-  pptx.layout = "LAYOUT_16x9";
-  imgs.forEach((img,i)=>{
-    const slide = pptx.addSlide();
-    slide.addImage({ data: img.src, x:0, y:0, w:10, h:5.625 });
-    (img.links||[]).forEach(l=>{
-      slide.addText('', { x:l.x/128, y:l.y/128, w:l.w/128, h:l.h/128, hyperlink:{ url:l.url }, color:'FFFFFF', fill:{ type:'solid', color:'FFFFFF', transparency:100 }, line:'FFFFFF', lineSize:0 });
+  try {
+    el.status.textContent = "⏳ Rendering slides…";
+    const imgs = await renderAllToImages();
+    el.status.textContent = "⏳ Building PPTX…";
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_16x9";
+    imgs.forEach((img)=>{
+      const slide = pptx.addSlide();
+      slide.addImage({ data: img.src, x:0, y:0, w:10, h:5.625 });
+      (img.links||[]).forEach(l=>{
+        slide.addText('', { x:l.x/128, y:l.y/128, w:l.w/128, h:l.h/128, hyperlink:{ url:l.url }, color:'FFFFFF', fill:{ type:'solid', color:'FFFFFF', transparency:100 }, line:'FFFFFF', lineSize:0 });
+      });
+      if(img.notes && img.notes.length) slide.addNotes(img.notes.join('\n'));
     });
-    if(img.notes && img.notes.length) slide.addNotes(img.notes.join('\n'));
-  });
-  const name = (outline.meta.title || "Masterclass") + ".pptx";
-  await pptx.writeFile({ fileName: name });
-  el.status.textContent = "✅ PPTX saved";
+    const name = (outline.meta.title || "Masterclass") + ".pptx";
+    await pptx.writeFile({ fileName: name });
+    el.status.textContent = "✅ PPTX saved";
+  } catch(err){
+    console.error('Failed to export PPTX', err);
+    el.status.textContent = "❌ PPTX export failed";
+  }
 };
 
 /*** --------------------- EXPORT: PDF --------------------- ***/
 el.btnExportPDF.onclick = async ()=>{
-  el.status.textContent = "⏳ Rendering slides…";
-  const imgs = await renderAllToImages();
-  el.status.textContent = "⏳ Building PDF…";
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation:"landscape", unit:"pt", format:[1280,720] });
-  imgs.forEach((img,i)=>{
-    if(i>0) doc.addPage([1280,720], "landscape");
-    doc.addImage(img.src, "PNG", 0, 0, 1280, 720);
-    (img.links||[]).forEach(l=>{ doc.link(l.x, l.y, l.w, l.h, { url:l.url }); });
-  });
-  const name = (outline.meta.title || "Masterclass") + ".pdf";
-  doc.save(name);
-  el.status.textContent = "✅ PDF saved";
+  try {
+    el.status.textContent = "⏳ Rendering slides…";
+    const imgs = await renderAllToImages();
+    el.status.textContent = "⏳ Building PDF…";
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:"landscape", unit:"pt", format:[1280,720] });
+    imgs.forEach((img,i)=>{
+      if(i>0) doc.addPage([1280,720], "landscape");
+      doc.addImage(img.src, "PNG", 0, 0, 1280, 720);
+      (img.links||[]).forEach(l=>{ doc.link(l.x, l.y, l.w, l.h, { url:l.url }); });
+    });
+    const name = (outline.meta.title || "Masterclass") + ".pdf";
+    doc.save(name);
+    el.status.textContent = "✅ PDF saved";
+  } catch(err){
+    console.error('Failed to export PDF', err);
+    el.status.textContent = "❌ PDF export failed";
+  }
 };
 
 // Drag-drop support on the textarea card
