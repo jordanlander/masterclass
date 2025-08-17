@@ -925,12 +925,66 @@ function outlineToPptxSlides(outline){
           ], notes };
         }
         break;
+      case "05_image_right_research":
+        slides[i] = { elements:[
+          { type:"title", text:d.h1 || "" },
+          ...(d.subtitle ? [{ type:"text", text:d.subtitle, options:{ fontSize:24 } }] : []),
+          ...(d.bullets && d.bullets.length ? [{ type:"text", text:d.bullets.join("\n"), options:{ bullet:true, w:5 } }] : []),
+          ...(d.research ? [{ type:"text", text:`Research Shows:\n${d.research}`, options:{ w:5 } }] : []),
+          ...(d.image ? [
+            { type:"image", src:d.image, options:{ x:5.5, y:1.5, w:4, h:3 } },
+            ...(d.caption ? [{ type:"text", text:d.caption, options:{ x:5.5, y:4.6, w:4, fontSize:12 } }] : [])
+          ] : [])
+        ], notes };
+        break;
       case "06_quote":
         slides[i] = { elements:[
           { type:"text", text:d.quote || "", options:{ fontSize:32, italic:true, align:'center', y:2 } },
           ...(d.by ? [{ type:"text", text:`— ${d.by}`, options:{ align:'center', y:3 } }] : [])
         ], notes };
         break;
+      case "07_checklist":
+        slides[i] = { elements:[
+          { type:"title", text:d.h1 || "" },
+          ...(d.items && d.items.length ? [{ type:"text", text:d.items.join("\n"), options:{ bullet:true } }] : [])
+        ], notes };
+        break;
+      case "08_conclusion":
+        slides[i] = { elements:[
+          { type:"title", text:d.h1 || "Conclusion" },
+          ...(d.takeaways && d.takeaways.length ? [
+            { type:"text", text:"Key Takeaways", options:{ fontSize:20 } },
+            { type:"text", text:d.takeaways.join("\n"), options:{ bullet:true } }
+          ] : []),
+          ...((d.goal || (d.steps && d.steps.length)) ? [
+            { type:"text", text:"Action Plan", options:{ fontSize:20 } },
+            ...(d.goal ? [{ type:"text", text:`Goal: ${d.goal}` }] : []),
+            ...(d.steps && d.steps.length ? [{ type:"text", text:d.steps.join("\n"), options:{ bullet:true } }] : [])
+          ] : [])
+        ], notes };
+        break;
+      case "09_video": {
+        const m = (d.youtube||"").match(/(?:youtu.be\/|watch\?v=|embed\/)([^?&]+)/);
+        const id = m ? m[1] : "";
+        slides[i] = { elements:[
+          { type:"title", text:d.h1 || "" },
+          ...(id ? [{ type:"image", src:`https://img.youtube.com/vi/${id}/0.jpg`, options:{ x:1, y:1.5, w:8, h:4.5 } }] : []),
+          ...(d.youtube ? [{ type:"text", text:d.youtube, options:{ y:6.2, align:'center', fontSize:14 } }] : [])
+        ], notes };
+        break;
+      }
+      case "10_table": {
+        const tableText = d.table ? [
+          (d.table.headers || []).join(" | "),
+          ...(d.table.rows || []).map(r=>r.join(" | "))
+        ].join("\n") : "";
+        slides[i] = { elements:[
+          { type:"title", text:d.h1 || "" },
+          ...(d.bullets && d.bullets.length ? [{ type:"text", text:d.bullets.join("\n"), options:{ bullet:true } }] : []),
+          ...(tableText ? [{ type:"text", text:tableText, options:{ fontSize:14 } }] : [])
+        ], notes };
+        break;
+      }
       default:
         fallback.push(i);
         slides[i] = null;
