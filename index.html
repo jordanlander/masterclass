@@ -216,7 +216,8 @@ Subtitle
     </div>
   </div>
 
-<script>
+<script type="module">
+import { buildPptx } from './src/export/pptxBuilder.js';
 /*** --------------------- OUTLINE + PARSER --------------------- ***/
 let outline = { meta:{ title:"", presenter:"", org:"", date:"", theme:0 }, slides:[] };
 let idx = 0;
@@ -797,7 +798,8 @@ async function waitForImages(container){
     return new Promise(res=>{ img.onload = img.onerror = res; });
   }));
 }
-async function renderAllToImages(onProgress, opt={}){
+// Legacy screenshot renderer retained for PDF export
+async function renderSlidesToImages(onProgress, opt={}){
   // render slides into hidden stage and snapshot with html2canvas
   const stage = el.renderStage;
   stage.innerHTML = "";
@@ -835,25 +837,23 @@ async function renderAllToImages(onProgress, opt={}){
 el.btnExportPPTX.onclick = async ()=>{
   try {
     showProgress();
-    el.status.textContent = "⏳ Rendering slides…";
-    const lean = el.leanToggle.checked;
-    const imgs = await renderAllToImages(p=>setProgress(p*0.8), { lean });
     el.status.textContent = "⏳ Building PPTX…";
-    setProgress(90);
-    const pptx = new PptxGenJS();
-    pptx.layout = "LAYOUT_16x9";
-    imgs.forEach((img)=>{
-      const slide = pptx.addSlide();
-      slide.addImage({ data: img.src, x:0, y:0, w:10, h:5.625 });
-      (img.links||[]).forEach(l=>{
-        slide.addText('', { x:l.x/128, y:l.y/128, w:l.w/128, h:l.h/128, hyperlink:{ url:l.url }, color:'FFFFFF', fill:{ type:'solid', color:'FFFFFF', transparency:100 }, line:'FFFFFF', lineSize:0 });
-      });
-      if(img.notes && img.notes.length) slide.addNotes(img.notes.join('\n'));
+    setProgress(20);
+    const slides = outline.slides.map(s => {
+      const d = s.data || {};
+      const elements = [];
+      if (d.h1) elements.push({ type:'title', text:d.h1 });
+      if (d.subtitle) elements.push({ type:'text', text:d.subtitle });
+      if (Array.isArray(d.bullets)) d.bullets.forEach(b => elements.push({ type:'text', text:b }));
+      if (d.image) elements.push({ type:'image', src:d.image });
+      return { elements, notes: d.notes || [] };
     });
-    const name = (outline.meta.title || "Masterclass") + ".pptx";
+    const pptx = buildPptx(slides, { title: outline.meta.title });
+    setProgress(90);
     const blob = await pptx.write('blob');
     setProgress(100);
     hideProgress();
+    const name = (outline.meta.title || "Masterclass") + ".pptx";
     showDownload("PPTX ready", blob, name);
     el.status.textContent = "✅ PPTX ready";
   } catch(err){
@@ -869,7 +869,7 @@ el.btnExportPDF.onclick = async ()=>{
     showProgress();
     el.status.textContent = "⏳ Rendering slides…";
     const lean = el.leanToggle.checked;
-    const imgs = await renderAllToImages(p=>setProgress(p*0.8), { lean });
+    const imgs = await renderSlidesToImages(p=>setProgress(p*0.8), { lean });
     el.status.textContent = "⏳ Building PDF…";
     setProgress(90);
     const { jsPDF } = window.jspdf;
