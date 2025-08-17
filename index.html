@@ -35,7 +35,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
 .progress-bar{height:100%;width:0;background:var(--accent);transition:width .2s}
 .popup{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
 .popup-content{background:var(--card);padding:24px;border-radius:12px;text-align:center}
-.badge{background:#1e293b;padding:4px 8px;border-radius:999px;color:#cbd5e1;font-size:12px}
+.badge{background:#1e293b;padding:4px 8px;border-radius:999px;color:var(--text);font-size:12px}
 .split{display:grid;grid-template-columns:420px 1fr;gap:16px}
 .preview{background:white;border-radius:12px;overflow:auto;height:560px;padding:8px}
 .slide-list{list-style:none;padding:0;margin:8px 0;max-height:160px;overflow:auto}
@@ -379,6 +379,9 @@ function mdToOutline(md){
 }
 
 /*** --------------------- TEMPLATES --------------------- ***/
+function fmt(text){
+  return text ? text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') : '';
+}
 function slideHTML(s){
   const d = s.data || {};
   const begin = `
@@ -401,8 +404,8 @@ function slideHTML(s){
           <div class="row center" style="gap:48px">
             <div class="icon-circle">📖</div><div class="icon-circle">👩‍🏫</div><div class="icon-circle">👥</div>
           </div>
-          <h1 class="hdr" style="font-size:48px;margin:8px 0 4px">${d.h1||""}</h1>
-          <p class="p" style="font-size:20px;max-width:900px;margin:0 auto">${d.subtitle||""}</p>
+          <h1 class="hdr" style="font-size:48px;margin:8px 0 4px">${fmt(d.h1||"")}</h1>
+          <p class="p" style="font-size:20px;max-width:900px;margin:0 auto">${fmt(d.subtitle||"")}</p>
         </div>
       ${end}`;
     case "02_toc":
@@ -410,20 +413,20 @@ function slideHTML(s){
       const half = Math.ceil(items.length/2);
       return `
       ${begin}
-        <h1 class="hdr" style="font-size:36px;margin:0 0 12px">${d.h1||"Table of Contents"}</h1>
+        <h1 class="hdr" style="font-size:36px;margin:0 0 12px">${fmt(d.h1||"Table of Contents")}</h1>
         <div class="row" style="gap:24px">
           <div class="col" style="flex:1">
             ${items.slice(0,half).map((t,i)=>`
               <div class="row" style="align-items:center;gap:8px">
                 <span class="icon-circle" style="width:32px;height:32px;font-size:14px;border-width:0;background:var(--brand);color:#fff">${i+1}</span>
-                <span class="p" style="font-weight:700">${t}</span>
+                <span class="p" style="font-weight:700">${fmt(t)}</span>
               </div>`).join("")}
           </div>
           <div class="col" style="flex:1">
             ${items.slice(half).map((t,i)=>`
               <div class="row" style="align-items:center;gap:8px">
                 <span class="icon-circle" style="width:32px;height:32px;font-size:14px;border-width:0;background:var(--brand);color:#fff">${i+1+half}</span>
-                <span class="p" style="font-weight:700">${t}</span>
+                <span class="p" style="font-weight:700">${fmt(t)}</span>
               </div>`).join("")}
           </div>
         </div>
@@ -433,9 +436,9 @@ function slideHTML(s){
       ${begin}
         <div class="row" style="align-items:center;height:540px">
           <div class="col" style="flex:2;padding-right:24px">
-            <h1 class="hdr" style="font-size:60px;margin:0 0 12px">${d.h1||""}</h1>
+            <h1 class="hdr" style="font-size:60px;margin:0 0 12px">${fmt(d.h1||"")}</h1>
             <div style="width:120px;height:6px;background:var(--accent);margin-bottom:12px"></div>
-            <p class="p" style="font-size:22px;max-width:640px">${d.tagline||""}</p>
+            <p class="p" style="font-size:22px;max-width:640px">${fmt(d.tagline||"")}</p>
           </div>
           <div class="center" style="flex:1">
             <div class="section-icon">${d.icon||"🧩"}</div>
@@ -445,45 +448,45 @@ function slideHTML(s){
     case "04_two_col_bullets":
       return `
       ${begin}
-        <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||""}</h1>
-        <p class="p" style="font-size:18px;margin:0 0 12px">${d.subtitle||""}</p>
+        <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${fmt(d.h1||"")}</h1>
+        <p class="p" style="font-size:18px;margin:0 0 12px">${fmt(d.subtitle||"")}</p>
         <div class="row" style="gap:24px">
           <div style="flex:3">
-            ${(d.bullets||[]).map(b=>`<p class="bullet-point">${b}</p>`).join("")}
-            ${(d.links||[]).map(l=>`<p class="p"><a data-href="${l.url}" href="${l.url}" target="_blank">${l.label}</a></p>`).join("")}
+            ${(d.bullets||[]).map(b=>`<p class="bullet-point">${fmt(b)}</p>`).join("")}
+            ${(d.links||[]).map(l=>`<p class="p"><a data-href="${l.url}" href="${l.url}" target="_blank">${fmt(l.label)}</a></p>`).join("")}
             ${d.video ? `<p class="p"><a data-href="${d.video}" href="${d.video}" target="_blank">Video ▶</a></p>`:""}
             ${d.highlight ? `
               <div style="margin-top:12px;padding:12px;background:var(--paper);border-left:4px solid var(--brand);border-radius:8px">
-                <p class="hdr" style="font-size:18px;margin:0 0 6px">${d.highlight.title||"Key Consideration:"}</p>
-                <p class="p" style="margin:0">${d.highlight.text||""}</p>
+                <p class="hdr" style="font-size:18px;margin:0 0 6px">${fmt(d.highlight.title||"Key Consideration:")}</p>
+                <p class="p" style="margin:0">${fmt(d.highlight.text||"")}</p>
               </div>` : ""}
           </div>
           <div style="flex:2">
             ${d.image ? `<img src="${d.image}" style="width:100%;height:280px;object-fit:cover;border:1px solid #e2e8f0;border-radius:10px"/>`
-                      : `<div class="center" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;height:280px;font-size:48px;color:#94a3b8">🖼️</div>`}
-            <p class="small" style="text-align:center;margin-top:6px;color:#64748b">${d.caption||""}</p>
+                      : `<div class="center" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;height:280px;font-size:48px;color:#1e293b">🖼️</div>`}
+            <p style="text-align:center;margin-top:6px;font-size:12px;color:#1e293b">${fmt(d.caption||"")}</p>
           </div>
         </div>
       ${end}`;
     case "05_image_right_research":
       return `
       ${begin}
-        <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||""}</h1>
-        <p class="p" style="font-size:18px;margin:0 0 12px">${d.subtitle||""}</p>
+        <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${fmt(d.h1||"")}</h1>
+        <p class="p" style="font-size:18px;margin:0 0 12px">${fmt(d.subtitle||"")}</p>
         <div class="row" style="gap:24px">
           <div style="flex:3">
-            ${(d.bullets||[]).map(b=>`<p class="bullet-point">${b}</p>`).join("")}
-            ${(d.links||[]).map(l=>`<p class="p"><a data-href="${l.url}" href="${l.url}" target="_blank">${l.label}</a></p>`).join("")}
+            ${(d.bullets||[]).map(b=>`<p class="bullet-point">${fmt(b)}</p>`).join("")}
+            ${(d.links||[]).map(l=>`<p class="p"><a data-href="${l.url}" href="${l.url}" target="_blank">${fmt(l.label)}</a></p>`).join("")}
             ${d.video ? `<p class="p"><a data-href="${d.video}" href="${d.video}" target="_blank">Video ▶</a></p>`:""}
             <div style="margin-top:12px;padding:12px;background:var(--paper);border-left:4px solid var(--brand);border-radius:8px">
               <p class="hdr" style="font-size:18px;margin:0 0 6px">Research Shows:</p>
-              <p class="p" style="margin:0">${d.research||""}</p>
+              <p class="p" style="margin:0">${fmt(d.research||"")}</p>
             </div>
           </div>
           <div style="flex:2">
             ${d.image ? `<img src="${d.image}" style="width:100%;height:280px;object-fit:cover;border:1px solid #e2e8f0;border-radius:10px"/>`
-                      : `<div class="center" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;height:280px;font-size:48px;color:#94a3b8">🤝</div>`}
-            <p class="small" style="text-align:center;margin-top:6px;color:#64748b">${d.caption||""}</p>
+                      : `<div class="center" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;height:280px;font-size:48px;color:#1e293b">🤝</div>`}
+            <p style="text-align:center;margin-top:6px;font-size:12px;color:#1e293b">${fmt(d.caption||"")}</p>
           </div>
         </div>
       ${end}`;
@@ -493,48 +496,48 @@ function slideHTML(s){
         <div class="center" style="height:540px;text-align:center">
           <div style="max-width:900px">
             <div class="hdr" style="font-size:28px;color:var(--brand)">“</div>
-            <h2 class="hdr" style="font-size:38px;margin:0 0 8px">${d.quote||""}</h2>
-            <p class="p">— ${d.by||"Unknown"}</p>
+            <h2 class="hdr" style="font-size:38px;margin:0 0 8px">${fmt(d.quote||"")}</h2>
+            <p class="p">— ${fmt(d.by||"Unknown")}</p>
           </div>
         </div>
       ${end}`;
     case "07_checklist":
       return `
       ${begin}
-        <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||""}</h1>
+        <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${fmt(d.h1||"")}</h1>
         <ul style="padding:0;margin:0;list-style:none">
-          ${(d.items||[]).map(t=>`<li class="row" style="gap:8px;align-items:flex-start;margin:6px 0">✅<span class="p" style="font-size:18px">${t}</span></li>`).join("")}
+          ${(d.items||[]).map(t=>`<li class="row" style="gap:8px;align-items:flex-start;margin:6px 0">✅<span class="p" style="font-size:18px">${fmt(t)}</span></li>`).join("")}
         </ul>
       ${end}`;
       case "08_conclusion":
         return `
         ${begin}
-          <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||"Conclusion"}</h1>
+          <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${fmt(d.h1||"Conclusion")}</h1>
         <div class="row" style="gap:24px">
           <div style="flex:1">
             <h3 class="hdr" style="font-size:20px;margin:0 0 6px">Key Takeaways</h3>
-            <ul class="p" style="margin:0 0 8px 18px">${(d.takeaways||[]).map(t=>`<li>${t}</li>`).join("")}</ul>
+            <ul class="p" style="margin:0 0 8px 18px">${(d.takeaways||[]).map(t=>`<li>${fmt(t)}</li>`).join("")}</ul>
           </div>
           <div style="flex:1">
             <h3 class="hdr" style="font-size:20px;margin:0 0 6px">Action Plan</h3>
-            <p class="p"><strong>Goal:</strong> ${d.goal||""}</p>
-            <ul class="p" style="margin:0 0 8px 18px">${(d.steps||[]).map(s=>`<li>${s}</li>`).join("")}</ul>
+            <p class="p"><strong>Goal:</strong> ${fmt(d.goal||"")}</p>
+            <ul class="p" style="margin:0 0 8px 18px">${(d.steps||[]).map(s=>`<li>${fmt(s)}</li>`).join("")}</ul>
           </div>
         </div>
         ${end}`;
       case "10_table":
         return `
         ${begin}
-          <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${d.h1||""}</h1>
-          ${(d.bullets||[]).map(b=>`<p class="bullet-point">${b}</p>`).join("")}
-          ${d.table?`<table style="width:100%;border-collapse:collapse;margin-top:16px"><thead><tr>${(d.table.headers||[]).map(h=>`<th style="border:1px solid #94a3b8;padding:4px;background:var(--paper)">${h}</th>`).join("")}</tr></thead><tbody>${(d.table.rows||[]).map(r=>`<tr>${r.map(c=>`<td style="border:1px solid #94a3b8;padding:4px">${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`:""}
+          <h1 class="hdr" style="font-size:32px;margin:0 0 8px">${fmt(d.h1||"")}</h1>
+          ${(d.bullets||[]).map(b=>`<p class="bullet-point">${fmt(b)}</p>`).join("")}
+          ${d.table?`<table style="width:100%;border-collapse:collapse;margin-top:16px;color:#1e293b"><thead><tr>${(d.table.headers||[]).map(h=>`<th style="border:1px solid #1e293b;padding:4px;background:var(--paper);color:#1e293b">${fmt(h)}</th>`).join("")}</tr></thead><tbody>${(d.table.rows||[]).map(r=>`<tr>${r.map(c=>`<td style="border:1px solid #1e293b;padding:4px;color:#1e293b">${fmt(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`:""}
         ${end}`;
       case "09_video": {
         const m = (d.youtube||"").match(/(?:youtu.be\/|watch\?v=|embed\/)([^?&]+)/);
         const id = m ? m[1] : "";
         return `
         ${begin}
-          <h1 class="hdr" style="font-size:32px;margin:0 0 12px">${d.h1||""}</h1>
+          <h1 class="hdr" style="font-size:32px;margin:0 0 12px">${fmt(d.h1||"")}</h1>
         <div class="center" style="height:540px">
           <a data-href="${d.youtube}" href="${d.youtube}" target="_blank" style="position:relative;display:block;width:800px;height:450px;border-radius:8px;overflow:hidden">
             <img src="${id?`https://img.youtube.com/vi/${id}/0.jpg`:""}" style="width:100%;height:100%;object-fit:cover"/>
@@ -621,7 +624,7 @@ function refreshUI(){
   el.slideList.innerHTML = "";
   outline.slides.forEach((s,i)=>{
     const li = document.createElement('li');
-    li.textContent = `${i+1}. ${s.data?.h1 || s.data?.title || `Slide ${i+1}`}`;
+    li.innerHTML = `${i+1}. ${fmt(s.data?.h1 || s.data?.title || `Slide ${i+1}`)}`;
     li.dataset.index = i;
     li.draggable = true;
     if(i===idx) li.classList.add('active');
