@@ -849,13 +849,10 @@ el.btnExportPPTX.onclick = async ()=>{
     const slides = imgs.map(img => ({ src: img.src, notes: img.notes }));
     const pptx = buildPptx(slides, { title: outline.meta.title });
     const pptxBlob = await pptx.write('blob');
-    const blob = new Blob([pptxBlob], {
-      type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-    });
     setProgress(100);
     hideProgress();
     const name = (outline.meta.title || "Masterclass") + ".pptx";
-    showDownload("PPTX ready", blob, name);
+    showDownload("PPTX ready", pptxBlob, name);
     el.status.textContent = "✅ PPTX ready";
   } catch(err){
     console.error('Failed to export PPTX', err);
