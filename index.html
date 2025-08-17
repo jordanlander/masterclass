@@ -990,6 +990,14 @@ function outlineToPptxSlides(outline){
         slides[i] = null;
     }
   });
+  const footerLeft = [outline.meta?.org, outline.meta?.presenter].filter(Boolean).join(' — ');
+  const footerRight = outline.meta?.date || '';
+  slides.forEach(sl=>{
+    if(sl && sl.elements){
+      if(footerLeft) sl.elements.push({ type:'footer', text:footerLeft, options:{ x:0.3, y:5.4, w:4.5 } });
+      if(footerRight) sl.elements.push({ type:'footer', text:footerRight, options:{ x:5.2, y:5.4, w:4.5, align:'right' } });
+    }
+  });
   return { slides, fallback };
 }
 

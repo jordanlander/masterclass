@@ -26,8 +26,28 @@ export function buildPptx(slides, meta = {}) {
     pptx.coreProps = { title: meta.title };
   }
 
+  // Read theme colors from CSS variables if available
+  let brand = '#1e3a8a';
+  let accent = '#f97316';
+  if (typeof window !== 'undefined') {
+    const css = getComputedStyle(document.documentElement);
+    brand = css.getPropertyValue('--brand').trim() || brand;
+    accent = css.getPropertyValue('--accent').trim() || accent;
+  }
+
+  const titleBarH = 0.094;
+  const accentBarH = 0.031;
+  const footerBarH = 0.3125;
+
   slides.forEach(slideModel => {
     const slide = pptx.addSlide();
+
+    // Theme bars
+    slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 10, h: titleBarH, fill: { color: brand }, line: { color: brand } });
+    slide.addShape(pptx.ShapeType.rect, { x: 0, y: titleBarH, w: 10, h: accentBarH, fill: { color: accent }, line: { color: accent } });
+    slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.625 - footerBarH - accentBarH, w: 10, h: accentBarH, fill: { color: accent }, line: { color: accent } });
+    slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.625 - footerBarH, w: 10, h: footerBarH, fill: { color: brand }, line: { color: brand } });
+
     if (slideModel.src) {
       // Slide represented as a pre-rendered image
       slide.addImage({ data: slideModel.src, x: 0, y: 0, w: 10, h: 5.625 });
@@ -58,6 +78,19 @@ export function buildPptx(slides, meta = {}) {
             const options = { path: el.src, x: 0.5, y, w: 4, h: 3, ...(el.options || {}) };
             slide.addImage(options);
             y += options.h + 0.5;
+            break;
+          }
+          case 'footer': {
+            const options = {
+              x: 0.3,
+              y: 5.625 - footerBarH + 0.05,
+              w: 9.4,
+              h: 0.2,
+              fontSize: 12,
+              color: 'FFFFFF',
+              ...(el.options || {})
+            };
+            slide.addText(el.text || '', options);
             break;
           }
         }
