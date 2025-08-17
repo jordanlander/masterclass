@@ -837,19 +837,13 @@ async function renderSlidesToImages(onProgress, opt={}){
 el.btnExportPPTX.onclick = async ()=>{
   try {
     showProgress();
+    el.status.textContent = "⏳ Rendering slides…";
+    const lean = el.leanToggle.checked;
+    const imgs = await renderSlidesToImages(p=>setProgress(p*0.8), { lean });
     el.status.textContent = "⏳ Building PPTX…";
-    setProgress(20);
-    const slides = outline.slides.map(s => {
-      const d = s.data || {};
-      const elements = [];
-      if (d.h1) elements.push({ type:'title', text:d.h1 });
-      if (d.subtitle) elements.push({ type:'text', text:d.subtitle });
-      if (Array.isArray(d.bullets)) d.bullets.forEach(b => elements.push({ type:'text', text:b }));
-      if (d.image) elements.push({ type:'image', src:d.image });
-      return { elements, notes: d.notes || [] };
-    });
-    const pptx = buildPptx(slides, { title: outline.meta.title });
     setProgress(90);
+    const slides = imgs.map(img => ({ src: img.src, notes: img.notes }));
+    const pptx = buildPptx(slides, { title: outline.meta.title });
     const blob = await pptx.write('blob');
     setProgress(100);
     hideProgress();
