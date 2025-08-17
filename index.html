@@ -332,6 +332,28 @@ function mdToOutline(md){
 
     if(/^###\s+/.test(L)){
       const h3 = L.replace(/^###\s+/, '').trim();
+
+      // Quote slide
+      if(/^quote$/i.test(h3)){
+        const line = (lines[i+1]||'').trim();
+        const cleaned = line.replace(/^[^\w"“]+/, '').replace(/\*/g, '').trim();
+        const parts = cleaned.split(/\s+[\-–—]\s+/);
+        const quote = parts[0] || '';
+        const by = parts[1] || '';
+        slides.push({ template:"06_quote", data:{ quote, by } });
+        i += 1;
+        continue;
+      }
+
+      // Reflective question slide
+      if(/reflect/i.test(h3)){
+        const line = (lines[i+1]||'').trim();
+        const quote = line.replace(/^[^\w"“]+/, '').replace(/\*/g, '').trim();
+        slides.push({ template:"06_quote", data:{ quote, by:"" } });
+        i += 1;
+        continue;
+      }
+
       const raw = getList(i+1);
       const next = getList.next;
       const data = { h1:h3, subtitle:"", bullets:[], icon:"", caption:"" };
@@ -903,6 +925,12 @@ function outlineToPptxSlides(outline){
           ], notes };
         }
         break;
+      case "06_quote":
+        slides[i] = { elements:[
+          { type:"text", text:d.quote || "", options:{ fontSize:32, italic:true, align:'center', y:2 } },
+          ...(d.by ? [{ type:"text", text:`— ${d.by}`, options:{ align:'center', y:3 } }] : [])
+        ], notes };
+        break;
       default:
         fallback.push(i);
         slides[i] = null;
@@ -913,20 +941,26 @@ function outlineToPptxSlides(outline){
 
 el.btnExportPPTX.onclick = async ()=>{
   try{
+    showProgress();
     const { slides, fallback } = outlineToPptxSlides(outline);
     let images = [];
     if(fallback.length){
       el.status.textContent = "⏳ Rendering slides…";
+      setProgress(50);
       ({ images } = await renderAllToImages({ lean: el.leanToggle.checked }));
       fallback.forEach(i=>{ slides[i] = { src: images[i], notes: outline.slides[i].data.notes || [] }; });
     }
     el.status.textContent = "⏳ Building PPTX…";
+    setProgress(90);
     const pptx = buildPptx(slides, { title: outline.meta.title });
     const name = (outline.meta.title || "Masterclass") + ".pptx";
     await pptx.writeFile({ fileName: name });
+    setProgress(100);
+    hideProgress();
     el.status.textContent = "✅ PPTX saved";
   }catch(err){
     console.error(err);
+    hideProgress();
     alert("PPTX export failed. Open the console for details.");
     el.status.textContent = "❌ PPTX export failed";
   }
