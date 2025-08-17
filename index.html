@@ -58,6 +58,19 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
 .w-2-3{width:66.666%}.w-1-3{width:33.333%}
 .w-full{width:100%}
 .hidden{display:none}
+
+@media (max-width:768px){
+  .split{grid-template-columns:1fr}
+  .grid-2{grid-template-columns:1fr}
+  .header{flex-direction:column;align-items:flex-start}
+  .toolbar{width:100%}
+  .preview{height:auto;min-height:300px}
+}
+
+@media (min-width:769px) and (max-width:1024px){
+  .split{grid-template-columns:300px 1fr}
+  .grid-2{grid-template-columns:300px 1fr}
+}
 </style>
 
 <!-- Client-side exporters -->
@@ -729,6 +742,13 @@ el.btnDownloadJson.onclick = ()=>{
 };
 
 /*** --------------------- EXPORT: PPTX --------------------- ***/
+async function waitForImages(container){
+  const imgs = Array.from(container.querySelectorAll('img'));
+  await Promise.all(imgs.map(img=>{
+    if(img.complete) return Promise.resolve();
+    return new Promise(res=>{ img.onload = img.onerror = res; });
+  }));
+}
 async function renderAllToImages(){
   // render slides into hidden stage and snapshot with html2canvas
   const stage = el.renderStage;
@@ -744,6 +764,7 @@ async function renderAllToImages(){
     container.style.left = "-99999px";
     container.innerHTML = slideHTML(s);
     stage.appendChild(container);
+    await waitForImages(container);
     await new Promise(r=>setTimeout(r,10));
     const rect = container.getBoundingClientRect();
     const links = [...container.querySelectorAll('[data-href]')].map(a=>{
