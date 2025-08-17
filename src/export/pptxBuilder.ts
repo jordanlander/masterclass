@@ -103,7 +103,7 @@ export function buildPptx(slides: SlideModel[], meta: { title?: string } = {}): 
             break;
           }
           case 'image': {
-            const options: any = { path: el.src, x: 0.5, y, w: 4, h: 3, ...(el.options || {}) };
+            const options: any = { data: el.src, x: 0.5, y, w: 4, h: 3, ...(el.options || {}) };
             slide.addImage(options);
             y += options.h + 0.5;
             break;

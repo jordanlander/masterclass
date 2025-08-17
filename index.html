@@ -840,6 +840,19 @@ async function inlineSlideImages(container){
   }
 }
 
+async function inlineModelImages(slides){
+  for(const slide of slides){
+    if(!slide || !slide.elements) continue;
+    for(const el of slide.elements){
+      if(el.type !== 'image') continue;
+      const src = el.src || '';
+      if(!src || src.startsWith('data:') || !/^https?:/i.test(src)) continue;
+      const data = await imgToDataURL(src);
+      if(data) el.src = data;
+    }
+  }
+}
+
 async function renderAllToImages(opt={}){
   const stage = el.renderStage;
   stage.innerHTML = "";
@@ -1012,6 +1025,7 @@ el.btnExportPPTX.onclick = async ()=>{
       ({ images } = await renderAllToImages({ lean: el.leanToggle.checked }));
       fallback.forEach(i=>{ slides[i] = { src: images[i], notes: outline.slides[i].data.notes || [] }; });
     }
+    await inlineModelImages(slides);
     el.status.textContent = "⏳ Building PPTX…";
     setProgress(90);
     const pptx = buildPptx(slides, { title: outline.meta.title });
