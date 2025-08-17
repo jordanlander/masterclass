@@ -220,6 +220,7 @@ Subtitle
 
 <script type="module">
 import { buildOdp } from './src/export/odpBuilder.js';
+import { buildPptx } from './src/export/pptxBuilder.js';
 /*** --------------------- OUTLINE + PARSER --------------------- ***/
 let outline = { meta:{ title:"", presenter:"", org:"", date:"", theme:0 }, slides:[] };
 let idx = 0;
@@ -870,41 +871,63 @@ async function renderAllToImages(opt={}){
   return { images, hotspotsBySlide };
 }
 
+function outlineToPptxSlides(outline){
+  const slides = [];
+  const fallback = [];
+  outline.slides.forEach((s,i)=>{
+    const d = s.data || {};
+    const notes = d.notes || [];
+    switch(s.template){
+      case "01_title":
+        slides[i] = { elements:[
+          { type:"title", text:d.h1 || "" },
+          ...(d.subtitle?[{ type:"text", text:d.subtitle, options:{ fontSize:24 } }]:[])
+        ], notes };
+        break;
+      case "02_toc":
+        slides[i] = { elements:[
+          { type:"title", text:d.h1 || "Table of Contents" },
+          ...(d.items && d.items.length ? [{ type:"text", text:d.items.join("\n"), options:{ bullet:true } }] : [])
+        ], notes };
+        break;
+      case "03_section":
+        slides[i] = { elements:[
+          { type:"title", text:d.h1 || "" },
+          ...(d.tagline?[{ type:"text", text:d.tagline }]:[])
+        ], notes };
+        break;
+      case "04_two_col_bullets":
+        if(d.image || d.table || d.video || d.highlight){
+          fallback.push(i);
+          slides[i] = null;
+        }else{
+          slides[i] = { elements:[
+            { type:"title", text:d.h1 || "" },
+            ...(d.bullets && d.bullets.length ? [{ type:"text", text:d.bullets.join("\n"), options:{ bullet:true } }] : [])
+          ], notes };
+        }
+        break;
+      default:
+        fallback.push(i);
+        slides[i] = null;
+    }
+  });
+  return { slides, fallback };
+}
+
 el.btnExportPPTX.onclick = async ()=>{
   try{
     showProgress();
-    el.status.textContent = "⏳ Rendering slides…";
-    const { images, hotspotsBySlide } = await renderAllToImages({ lean: el.leanToggle.checked });
-
+    const { slides, fallback } = outlineToPptxSlides(outline);
+    let images = [];
+    if(fallback.length){
+      el.status.textContent = "⏳ Rendering slides…";
+      ({ images } = await renderAllToImages({ lean: el.leanToggle.checked }));
+      fallback.forEach(i=>{ slides[i] = { src: images[i], notes: outline.slides[i].data.notes || [] }; });
+    }
     el.status.textContent = "⏳ Building PPTX…";
     setProgress(90);
-    const PptxCtor = window.PptxGenJS?.default || window.PptxGenJS;
-    if (!PptxCtor) {
-      alert("PPTX library not loaded. Check the <script> tag for pptxgenjs.");
-      hideProgress();
-      return;
-    }
-
-    const pptx = new PptxCtor();
-    pptx.layout = "LAYOUT_16x9";
-
-    const pxToInX = px => (px/1280)*10;
-    const pxToInY = px => (px/720)*5.625;
-
-    images.forEach((src,i)=>{
-      const slide = pptx.addSlide();
-      slide.addImage({ data: src, x: 0, y: 0, w: 10, h: 5.625 });
-      (hotspotsBySlide[i]||[]).forEach(h=>{
-        slide.addText(" ",{
-          x:pxToInX(h.x), y:pxToInY(h.y),
-          w:pxToInX(h.w), h:pxToInY(h.h),
-          hyperlink:{ url:h.url },
-          fill:{ color:"FFFFFF", transparency:100 },
-          line:{ color:"FFFFFF", transparency:100 }
-        });
-      });
-    });
-
+    const pptx = buildPptx(slides, { title: outline.meta.title });
     const name = (outline.meta.title || "Masterclass") + ".pptx";
     await pptx.writeFile({ fileName: name });
     setProgress(100);

@@ -44,10 +44,13 @@ export function buildPptx(slides: SlideModel[], meta: { title?: string } = {}): 
             slide.addText(el.text || '', { x: 0.5, y, w: 9, fontSize: 32, bold: true, ...(el.options || {}) });
             y += 1;
             break;
-          case 'text':
-            slide.addText(el.text || '', { x: 0.5, y, w: 9, fontSize: 18, ...(el.options || {}) });
-            y += 0.6;
+          case 'text': {
+            const text = el.text || '';
+            slide.addText(text, { x: 0.5, y, w: 9, fontSize: 18, ...(el.options || {}) });
+            const lines = text.split('\n').length;
+            y += 0.6 * lines;
             break;
+          }
           case 'image':
             slide.addImage({ path: el.src, x: 0.5, y, w: 4, h: 3, ...(el.options || {}) });
             y += 3.5;
