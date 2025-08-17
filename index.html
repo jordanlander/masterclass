@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Masterclass — Research → Slides → PPTX/ODS/PDF</title>
+<title>Masterclass — Research → Slides → PPTX/ODP/PDF</title>
 
 <!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -92,7 +92,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
         <button class="btn" id="btnDownloadJson">Download outline.json</button>
         <label class="small" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="leanToggle" checked/> Lean export</label>
         <button class="btn secondary" id="btnExportPPTX">Export PPTX</button>
-        <button class="btn secondary" id="btnExportODS">Export ODS</button>
+        <button class="btn secondary" id="btnExportODP">Export ODP</button>
         <button class="btn secondary" id="btnExportPDF">Export PDF</button>
         <div id="progressWrap" class="progress hidden"><div id="progressBar" class="progress-bar"></div></div>
       </div>
@@ -104,7 +104,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
         <li>Download the <a href="masterclass_markdown_template.md" download>Markdown Template</a>.</li>
         <li>Load it into your AI tool and prompt: <span class="small">"Research the topic and fill the template using markdown. Include image placeholders like <code>![](url)</code> and video links."</span></li>
         <li>Paste the AI's markdown below and click <strong>Use Pasted Text</strong>.</li>
-        <li>Review the slides, then export to PPTX, ODS or PDF.</li>
+        <li>Review the slides, then export to PPTX, ODP or PDF.</li>
       </ol>
     </div>
 
@@ -220,7 +220,7 @@ Subtitle
 
 <script type="module">
 import { buildPptx } from './src/export/pptxBuilder.js';
-import { buildOds } from './src/export/odsBuilder.js';
+import { buildOdp } from './src/export/odpBuilder.js';
 /*** --------------------- OUTLINE + PARSER --------------------- ***/
 let outline = { meta:{ title:"", presenter:"", org:"", date:"", theme:0 }, slides:[] };
 let idx = 0;
@@ -577,7 +577,7 @@ const el = {
   metaDate: document.getElementById('metaDate'),
   btnDownloadJson: document.getElementById('btnDownloadJson'),
   btnExportPPTX: document.getElementById('btnExportPPTX'),
-  btnExportODS: document.getElementById('btnExportODS'),
+  btnExportODP: document.getElementById('btnExportODP'),
   btnExportPDF: document.getElementById('btnExportPDF'),
   leanToggle: document.getElementById('leanToggle'),
   themeSelect: document.getElementById('themeSelect'),
@@ -861,26 +861,26 @@ el.btnExportPPTX.onclick = async ()=>{
   }
 };
 
-/*** --------------------- EXPORT: ODS --------------------- ***/
-el.btnExportODS.onclick = async ()=>{
+/*** --------------------- EXPORT: ODP --------------------- ***/
+el.btnExportODP.onclick = async ()=>{
   try {
     showProgress();
     el.status.textContent = "⏳ Rendering slides…";
     const lean = el.leanToggle.checked;
     const imgs = await renderSlidesToImages(p=>setProgress(p*0.8), { lean });
-    el.status.textContent = "⏳ Building ODS…";
+    el.status.textContent = "⏳ Building ODP…";
     setProgress(90);
     const slides = imgs.map(img => ({ src: img.src, notes: img.notes }));
-    const blob = await buildOds(slides, { title: outline.meta.title });
+    const blob = await buildOdp(slides, { title: outline.meta.title });
     setProgress(100);
     hideProgress();
-    const name = (outline.meta.title || "Masterclass") + ".ods";
-    showDownload("ODS ready", blob, name);
-    el.status.textContent = "✅ ODS ready";
+    const name = (outline.meta.title || "Masterclass") + ".odp";
+    showDownload("ODP ready", blob, name);
+    el.status.textContent = "✅ ODP ready";
   } catch(err){
-    console.error('Failed to export ODS', err);
+    console.error('Failed to export ODP', err);
     hideProgress();
-    el.status.textContent = "❌ ODS export failed";
+    el.status.textContent = "❌ ODP export failed";
   }
 };
 
