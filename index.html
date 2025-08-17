@@ -89,6 +89,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
       <div class="toolbar">
         <select id="themeSelect" class="input" style="width:auto"></select>
         <button class="btn" id="btnDownloadJson">Download outline.json</button>
+        <label class="small" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="leanToggle" checked/> Lean export</label>
         <button class="btn secondary" id="btnExportPPTX">Export PPTX</button>
         <button class="btn secondary" id="btnExportPDF">Export PDF</button>
         <div id="progressWrap" class="progress hidden"><div id="progressBar" class="progress-bar"></div></div>
@@ -570,6 +571,7 @@ const el = {
   btnDownloadJson: document.getElementById('btnDownloadJson'),
   btnExportPPTX: document.getElementById('btnExportPPTX'),
   btnExportPDF: document.getElementById('btnExportPDF'),
+  leanToggle: document.getElementById('leanToggle'),
   themeSelect: document.getElementById('themeSelect'),
   renderStage: document.getElementById('renderStage'),
   progressWrap: document.getElementById('progressWrap'),
@@ -792,12 +794,13 @@ async function waitForImages(container){
     return new Promise(res=>{ img.onload = img.onerror = res; });
   }));
 }
-async function renderAllToImages(onProgress){
+async function renderAllToImages(onProgress, opt={}){
   // render slides into hidden stage and snapshot with html2canvas
   const stage = el.renderStage;
   stage.innerHTML = "";
   stage.classList.remove("hidden");
   const images = [];
+  const lean = opt.lean;
   for (let i=0;i<outline.slides.length;i++){
     const s = outline.slides[i];
     const container = document.createElement("div");
@@ -814,8 +817,10 @@ async function renderAllToImages(onProgress){
       const r = a.getBoundingClientRect();
       return { url: a.getAttribute('href'), x: r.left-rect.left, y: r.top-rect.top, w: r.width, h: r.height };
     });
-    const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: 2, useCORS: true });
-    images.push({ src: canvas.toDataURL("image/png"), links, notes: s.data.notes||[] });
+    const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: lean?1:2, useCORS: true });
+    const fmt = lean?"image/jpeg":"image/png";
+    const dataUrl = canvas.toDataURL(fmt, lean?0.7:1.0);
+    images.push({ src: dataUrl, format: lean?"JPEG":"PNG", links, notes: s.data.notes||[] });
     container.remove();
     if(onProgress) onProgress((i+1)/outline.slides.length*100);
   }
@@ -827,7 +832,8 @@ el.btnExportPPTX.onclick = async ()=>{
   try {
     showProgress();
     el.status.textContent = "⏳ Rendering slides…";
-    const imgs = await renderAllToImages(p=>setProgress(p*0.8));
+    const lean = el.leanToggle.checked;
+    const imgs = await renderAllToImages(p=>setProgress(p*0.8), { lean });
     el.status.textContent = "⏳ Building PPTX…";
     setProgress(90);
     const pptx = new PptxGenJS();
@@ -858,14 +864,15 @@ el.btnExportPDF.onclick = async ()=>{
   try {
     showProgress();
     el.status.textContent = "⏳ Rendering slides…";
-    const imgs = await renderAllToImages(p=>setProgress(p*0.8));
+    const lean = el.leanToggle.checked;
+    const imgs = await renderAllToImages(p=>setProgress(p*0.8), { lean });
     el.status.textContent = "⏳ Building PDF…";
     setProgress(90);
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation:"landscape", unit:"pt", format:[1280,720] });
     imgs.forEach((img,i)=>{
       if(i>0) doc.addPage([1280,720], "landscape");
-      doc.addImage(img.src, "PNG", 0, 0, 1280, 720);
+      doc.addImage(img.src, img.format, 0, 0, 1280, 720);
       (img.links||[]).forEach(l=>{ doc.link(l.x, l.y, l.w, l.h, { url:l.url }); });
     });
     const name = (outline.meta.title || "Masterclass") + ".pdf";
