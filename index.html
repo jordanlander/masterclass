@@ -245,7 +245,8 @@ function mdToOutline(md){
     }
 
     if(/^##\s+Table of Contents/i.test(L)){
-      const {items, next} = getList(i+1);
+      const items = getList(i+1);
+      const next = getList.next;
       slides.push({ template:"02_toc", data:{ h1:"Table of Contents", items }});
       i = next - 1;
       continue;
