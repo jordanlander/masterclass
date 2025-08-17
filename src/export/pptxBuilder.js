@@ -23,6 +23,9 @@ export function buildPptx(slides, meta = {}) {
             break;
           case 'text': {
             const text = el.text || '';
+            if (el.options && typeof el.options.y === 'number') {
+              y = el.options.y;
+            }
             slide.addText(text, { x: 0.5, y, w: 9, fontSize: 18, ...(el.options || {}) });
             const lines = text.split('\n').length;
             y += 0.6 * lines;
