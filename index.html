@@ -31,6 +31,10 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
 .btn{background:var(--brand);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
 .btn.secondary{background:#334155}
 .btn.ghost{background:transparent;border:1px dashed #334155}
+.progress{width:120px;height:8px;background:#334155;border-radius:4px;overflow:hidden}
+.progress-bar{height:100%;width:0;background:var(--accent);transition:width .2s}
+.popup{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
+.popup-content{background:var(--card);padding:24px;border-radius:12px;text-align:center}
 .badge{background:#1e293b;padding:4px 8px;border-radius:999px;color:#cbd5e1;font-size:12px}
 .split{display:grid;grid-template-columns:420px 1fr;gap:16px}
 .preview{background:white;border-radius:12px;overflow:auto;height:560px;padding:8px}
@@ -87,6 +91,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
         <button class="btn" id="btnDownloadJson">Download outline.json</button>
         <button class="btn secondary" id="btnExportPPTX">Export PPTX</button>
         <button class="btn secondary" id="btnExportPDF">Export PDF</button>
+        <div id="progressWrap" class="progress hidden"><div id="progressBar" class="progress-bar"></div></div>
       </div>
     </header>
 
@@ -203,6 +208,12 @@ Subtitle
 
   <!-- Hidden render stage for exports -->
   <div id="renderStage" class="hidden"></div>
+  <div id="downloadPopup" class="popup hidden">
+    <div class="popup-content">
+      <p id="downloadMessage" class="mb-3"></p>
+      <a id="downloadLink" class="btn" download>Download</a>
+    </div>
+  </div>
 
 <script>
 /*** --------------------- OUTLINE + PARSER --------------------- ***/
@@ -220,6 +231,30 @@ function loadOutline(){
   }
 }
 loadOutline();
+
+function setProgress(p){
+  el.progressBar.style.width = `${p}%`;
+}
+function showProgress(){
+  setProgress(0);
+  el.progressWrap.classList.remove('hidden');
+}
+function hideProgress(){
+  el.progressWrap.classList.add('hidden');
+}
+
+function showDownload(message, blob, name){
+  if(el.downloadLink.href) URL.revokeObjectURL(el.downloadLink.href);
+  const url = URL.createObjectURL(blob);
+  el.downloadLink.href = url;
+  el.downloadLink.download = name;
+  el.downloadMessage.textContent = message;
+  el.downloadPopup.classList.remove('hidden');
+}
+function closeDownload(){
+  el.downloadPopup.classList.add('hidden');
+  if(el.downloadLink.href){ URL.revokeObjectURL(el.downloadLink.href); el.downloadLink.href = ""; }
+}
 
 const themes = [
   { name:"Royal Blue", brand:"#1e3a8a", accent:"#f97316" },
@@ -537,7 +572,15 @@ const el = {
   btnExportPDF: document.getElementById('btnExportPDF'),
   themeSelect: document.getElementById('themeSelect'),
   renderStage: document.getElementById('renderStage'),
+  progressWrap: document.getElementById('progressWrap'),
+  progressBar: document.getElementById('progressBar'),
+  downloadPopup: document.getElementById('downloadPopup'),
+  downloadLink: document.getElementById('downloadLink'),
+  downloadMessage: document.getElementById('downloadMessage'),
 };
+
+el.downloadLink.addEventListener('click', ()=>{ setTimeout(closeDownload,100); });
+el.downloadPopup.addEventListener('click', e=>{ if(e.target===el.downloadPopup) closeDownload(); });
 
 themes.forEach((t,i)=>{
   const opt = document.createElement('option');
@@ -749,7 +792,7 @@ async function waitForImages(container){
     return new Promise(res=>{ img.onload = img.onerror = res; });
   }));
 }
-async function renderAllToImages(){
+async function renderAllToImages(onProgress){
   // render slides into hidden stage and snapshot with html2canvas
   const stage = el.renderStage;
   stage.innerHTML = "";
@@ -774,6 +817,7 @@ async function renderAllToImages(){
     const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: 2, useCORS: true });
     images.push({ src: canvas.toDataURL("image/png"), links, notes: s.data.notes||[] });
     container.remove();
+    if(onProgress) onProgress((i+1)/outline.slides.length*100);
   }
   stage.classList.add("hidden");
   return images;
@@ -781,9 +825,11 @@ async function renderAllToImages(){
 
 el.btnExportPPTX.onclick = async ()=>{
   try {
+    showProgress();
     el.status.textContent = "⏳ Rendering slides…";
-    const imgs = await renderAllToImages();
+    const imgs = await renderAllToImages(p=>setProgress(p*0.8));
     el.status.textContent = "⏳ Building PPTX…";
+    setProgress(90);
     const pptx = new PptxGenJS();
     pptx.layout = "LAYOUT_16x9";
     imgs.forEach((img)=>{
@@ -795,10 +841,14 @@ el.btnExportPPTX.onclick = async ()=>{
       if(img.notes && img.notes.length) slide.addNotes(img.notes.join('\n'));
     });
     const name = (outline.meta.title || "Masterclass") + ".pptx";
-    await pptx.writeFile({ fileName: name });
-    el.status.textContent = "✅ PPTX saved";
+    const blob = await pptx.write('blob');
+    setProgress(100);
+    hideProgress();
+    showDownload("PPTX ready", blob, name);
+    el.status.textContent = "✅ PPTX ready";
   } catch(err){
     console.error('Failed to export PPTX', err);
+    hideProgress();
     el.status.textContent = "❌ PPTX export failed";
   }
 };
@@ -806,9 +856,11 @@ el.btnExportPPTX.onclick = async ()=>{
 /*** --------------------- EXPORT: PDF --------------------- ***/
 el.btnExportPDF.onclick = async ()=>{
   try {
+    showProgress();
     el.status.textContent = "⏳ Rendering slides…";
-    const imgs = await renderAllToImages();
+    const imgs = await renderAllToImages(p=>setProgress(p*0.8));
     el.status.textContent = "⏳ Building PDF…";
+    setProgress(90);
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation:"landscape", unit:"pt", format:[1280,720] });
     imgs.forEach((img,i)=>{
@@ -817,10 +869,14 @@ el.btnExportPDF.onclick = async ()=>{
       (img.links||[]).forEach(l=>{ doc.link(l.x, l.y, l.w, l.h, { url:l.url }); });
     });
     const name = (outline.meta.title || "Masterclass") + ".pdf";
-    doc.save(name);
-    el.status.textContent = "✅ PDF saved";
+    const blob = doc.output('blob');
+    setProgress(100);
+    hideProgress();
+    showDownload("PDF ready", blob, name);
+    el.status.textContent = "✅ PDF ready";
   } catch(err){
     console.error('Failed to export PDF', err);
+    hideProgress();
     el.status.textContent = "❌ PDF export failed";
   }
 };
