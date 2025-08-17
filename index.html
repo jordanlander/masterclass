@@ -63,6 +63,16 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
 .w-full{width:100%}
 .hidden{display:none}
 
+#preview{
+  --scale:1;
+  height:calc(720px * var(--scale));
+  overflow:hidden;
+}
+#preview .slide-container{
+  transform:scale(var(--scale));
+  transform-origin:top left;
+}
+
 @media (max-width:768px){
   .split{grid-template-columns:1fr}
   .grid-2{grid-template-columns:1fr}
@@ -620,6 +630,13 @@ const el = {
 el.downloadLink.addEventListener('click', ()=>{ setTimeout(closeDownload,100); });
 el.downloadPopup.addEventListener('click', e=>{ if(e.target===el.downloadPopup) closeDownload(); });
 
+function updatePreviewScale(){
+  const width = el.preview.clientWidth;
+  const scale = Math.min(1, width / 1280);
+  el.preview.style.setProperty('--scale', scale);
+}
+window.addEventListener('resize', updatePreviewScale);
+
 themes.forEach((t,i)=>{
   const opt = document.createElement('option');
   opt.value = i;
@@ -648,6 +665,7 @@ el.themeSelect.onchange = ()=>{
 };
 
 function refreshUI(){
+  updatePreviewScale();
   if(!outline.meta) outline.meta = {};
   if(!Array.isArray(outline.slides)) outline.slides = [];
   outline.meta.theme ??= 0;
