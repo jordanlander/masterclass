@@ -30,5 +30,5 @@ export async function buildOds(slides, meta = {}) {
   zip.file('content.xml', content.join(''));
   zip.file('META-INF/manifest.xml', manifest.join(''));
 
-  return zip.generateAsync({ type: 'blob' });
+  return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.oasis.opendocument.spreadsheet' });
 }
