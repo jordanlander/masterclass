@@ -400,6 +400,10 @@ function mdToOutline(md){
             const rest = b.replace(/^IMG:\s*/i, '').trim();
             const [url,cap] = rest.split(/\s*\|\s*/);
             if(url){ data.image = url; if(cap) data.caption = cap; }
+          }else if(/^HIGHLIGHT:/i.test(b)){
+            const rest = b.replace(/^HIGHLIGHT:\s*/i, '').trim();
+            const [title,text] = rest.split(/\s*\|\s*/);
+            data.highlight = { title: title || 'Key Consideration:', text: text || '' };
           }else{
             data.bullets.push(b);
           }
@@ -959,7 +963,7 @@ function outlineToPptxSlides(outline){
         ], notes };
         break;
       case "04_two_col_bullets":
-        if(d.image || d.table || d.video){
+        if(d.image || d.table || d.video || d.highlight){
           fallback.push(i);
           slides[i] = null;
         }else{

@@ -25,8 +25,9 @@ Rules (strict):
 12) LINK: Under any ### slide, add LINK: Label | https://...
 13) IMG (optional): IMG: https://... | optional caption (shows right-side image).
 14) TABLE (optional): Start a bullet with TABLE: then provide Markdown table rows on subsequent lines. First row is headers.
-15) Bullets may include emojis for emphasis.
-16) Continue the pattern for as many slides as needed; no slide limit.
+15) HIGHLIGHT (optional): HIGHLIGHT: Title | text (adds a callout card for key ideas, e.g., "Research shows | statistic" or "Best Practice | tip").
+16) Bullets may include emojis for emphasis.
+17) Continue the pattern for as many slides as needed; no slide limit.
 
 Example (you can copy this shape):
 

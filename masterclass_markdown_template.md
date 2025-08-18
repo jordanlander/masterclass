@@ -35,6 +35,7 @@
 ### [Slide title]
 - [bullet 1]
 - [bullet 2]
+- HIGHLIGHT: Research shows | [supporting evidence]
 
 ### [Video title]
 - VIDEO: https://www.youtube.com/watch?v=VIDEO_ID
