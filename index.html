@@ -958,17 +958,42 @@ function outlineToPptxSlides(outline){
           ...(d.tagline?[{ type:"text", text:d.tagline }]:[])
         ], notes };
         break;
-      case "04_two_col_bullets":
-        if(d.image || d.table || d.video){
-          fallback.push(i);
-          slides[i] = null;
-        }else{
-          slides[i] = { elements:[
-            { type:"title", text:d.h1 || "" },
-            ...(d.bullets && d.bullets.length ? [{ type:"text", text:d.bullets.join("\n"), options:{ bullet:true } }] : [])
-          ], notes };
+      case "04_two_col_bullets": {
+        const elements = [
+          { type: "title", text: d.h1 || "" },
+          ...(d.subtitle ? [{ type: "text", text: d.subtitle, options: { fontSize: 24 } }] : []),
+          ...(d.bullets && d.bullets.length
+            ? [{ type: "text", text: d.bullets.join("\n"), options: { bullet: true, w: 4.5 } }]
+            : []),
+          ...(d.links && d.links.length
+            ? [{ type: "text", text: d.links.map(l => `${l.label}: ${l.url}`).join("\n"), options: { w: 4.5, fontSize: 14 } }]
+            : []),
+          ...(d.video ? [{ type: "text", text: d.video, options: { w: 4.5, fontSize: 14 } }] : []),
+          ...(d.highlight
+            ? [
+                { type: "text", text: d.highlight.title || "Key Consideration:", options: { w: 4.5, fontSize: 18, bold: true } },
+                { type: "text", text: d.highlight.text || "", options: { w: 4.5 } }
+              ]
+            : [])
+        ];
+        if (d.image) {
+          elements.push({ type: "image", src: d.image, options: { x: 5.5, y: 1.5, w: 4, h: 3 } });
+          if (d.caption) {
+            elements.push({ type: "text", text: d.caption, options: { x: 5.5, y: 4.6, w: 4, fontSize: 12 } });
+          }
         }
+        if (d.table) {
+          const tableText = [
+            (d.table.headers || []).join(" | "),
+            ...(d.table.rows || []).map(r => r.join(" | "))
+          ].join("\n");
+          if (tableText) {
+            elements.push({ type: "text", text: tableText, options: { w: 4.5, fontSize: 14 } });
+          }
+        }
+        slides[i] = { elements, notes };
         break;
+      }
       case "05_image_right_research":
         slides[i] = { elements:[
           { type:"title", text:d.h1 || "" },
