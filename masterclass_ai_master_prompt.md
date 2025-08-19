@@ -63,6 +63,16 @@ date: "[Date]"
    - End with key takeaways, quotes, and resource links.
    - Check spelling, grammar, and consistent formatting before finalizing.
 
+## 📋 Command List for Media
+
+Use these commands within slide content to embed multimedia:
+
+| To insert | Syntax | Example |
+|-----------|--------|---------|
+| Image or picture | `![](IMAGE_URL)` | `![](https://picsum.photos/seed/topic/1000/450)` |
+| Image with alt text | `![Alt Text](IMAGE_URL)` | `![Brain Diagram](https://example.com/brain.png)` |
+| Video | `VIDEO: [Title](VIDEO_URL)` | `VIDEO: Growth Mindset Explained(https://youtu.be/abcdef)` |
+
 ## 🔧 Prompt to the AI
 
 Using the format and instructions above:
